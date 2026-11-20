@@ -103,7 +103,7 @@ export function confirmDialog(title, message, { danger = false, okLabel = 'Terus
   return modal({
     title, body,
     buttons: [
-      { label: 'Batal', value: false, kind: 'ghost' },
+      { label: 'Cancel', value: false, kind: 'ghost' },
       {
         label: okLabel, value: true, kind: danger ? 'danger' : 'primary',
         validate: typeToConfirm ? (w) => {

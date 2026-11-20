@@ -101,7 +101,7 @@ function review(info, p, s) {
              <button class="btn btn-grey btn-lg btn-block" data-x>Kembali</button>`
       : html`<p class="ci-q">Adakah maklumat ini betul?</p>
              <div class="ci-actions">
-               <button class="btn btn-grey btn-lg" data-x>Batal</button>
+               <button class="btn btn-grey btn-lg" data-x>Cancel</button>
                <button class="btn btn-go btn-lg" id="ci-confirm">${icon('check')} Sahkan Kehadiran</button>
              </div>`}`);
   root.querySelectorAll('[data-x]').forEach((b) => b.addEventListener('click', () => form(info, p)));

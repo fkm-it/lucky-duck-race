@@ -91,7 +91,7 @@ export async function render(el, ctx) {
         <td class="mono">${r.staff_id}</td><td><b>${r.name}</b></td><td>${r.department || '—'}</td>
         <td>${r.checked_in_at ? html`<span class="tag tag-ok">✔ Hadir ${fmtTime(r.checked_in_at)}</span> <small class="muted">${r.checked_in_via === 'manual' ? 'manual' : 'QR'}</small>` : html`<span class="tag">Belum</span>`}</td>
         <td class="row-act">${r.checked_in_at
-          ? html`<button class="btn btn-ghost btn-sm" data-out="${r.staff_id}">Batal</button>`
+          ? html`<button class="btn btn-ghost btn-sm" data-out="${r.staff_id}">Cancel</button>`
           : html`<button class="btn btn-go btn-sm" data-in="${r.staff_id}">✔ Sahkan</button>`}</td></tr>`)
         : html`<tr><td colspan="5" class="empty-cell">${st.rows.length ? 'Tiada padanan.' : html`Belum ada senarai staf. <a href="#/staff?target=attendance">Muat naik Excel</a>.`}</td></tr>`}</tbody>`);
     mount($('#a-pager'), html`<span class="muted">${fmtNum(rows.length)} staf</span><div class="spacer"></div>

@@ -104,7 +104,7 @@ export async function render(el, ctx) {
         body: html`<p><b>${w.name}</b> (${w.staffId}) — ${w.prizeName} #${w.prizeNumber}</p>
           <p class="muted">Peserta akan kembali LAYAK untuk cabutan seterusnya dan slot hadiah ini dibuka semula. Rekod asal dikekalkan dalam sejarah dengan tanda "Dipulihkan".</p>
           <label class="field"><span>Sebab (wajib)</span><input id="rs" maxlength="200" placeholder="cth. Pemenang tiada di dewan"></label>`,
-        buttons: [{ label: 'Batal', value: null }, {
+        buttons: [{ label: 'Cancel', value: null }, {
           label: 'Pulihkan', kind: 'danger', value: true,
           validate: (wrap) => { const v = wrap.querySelector('#rs').value.trim(); if (!v) { toast('Nyatakan sebab.', 'error'); return false; } return { reason: v }; },
         }],

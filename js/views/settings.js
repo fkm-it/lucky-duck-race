@@ -124,7 +124,7 @@ export async function render(el, ctx) {
         body: html`<label class="field"><span>Kata laluan semasa</span><input type="password" id="pw0" autocomplete="current-password"></label>
           <label class="field"><span>Kata laluan baharu</span><input type="password" id="pw1" autocomplete="new-password"></label>
           <label class="field"><span>Sahkan</span><input type="password" id="pw2" autocomplete="new-password"></label>`,
-        buttons: [{ label: 'Batal', value: null }, {
+        buttons: [{ label: 'Cancel', value: null }, {
           label: 'Tukar', kind: 'primary', value: true,
           validate: async (w) => {
             const a = w.querySelector('#pw1').value;

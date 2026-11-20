@@ -63,7 +63,7 @@ export async function render(el, ctx) {
           } catch (err) { toast(errMsg(err), 'error'); }
         });
       },
-      buttons: [{ label: 'Batal', value: null }, {
+      buttons: [{ label: 'Cancel', value: null }, {
         label: 'Simpan', kind: 'primary', value: true,
         validate: async (w) => {
           try {

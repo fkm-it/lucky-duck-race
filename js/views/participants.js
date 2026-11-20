@@ -71,7 +71,7 @@ export async function render(el, ctx) {
   const edit = async (p) => {
     await modal({
       title: p ? 'Sunting peserta' : 'Tambah peserta', body: form(p || {}),
-      buttons: [{ label: 'Batal', value: null }, {
+      buttons: [{ label: 'Cancel', value: null }, {
         label: 'Simpan', kind: 'primary', value: true,
         validate: async (w) => {
           const v = { name: w.querySelector('#f-name').value, staffId: w.querySelector('#f-id').value, department: w.querySelector('#f-dept').value };
