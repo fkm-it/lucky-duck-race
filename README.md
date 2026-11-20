@@ -17,6 +17,15 @@ Sistem cabutan bertuah **perlumbaan itik 3D** untuk majlis korporat, universiti,
 | Admin | Log masuk (PBKDF2-SHA256), statistik langsung, log audit, sandaran/pulih JSON, reset (taip `RESET`). |
 | Bunyi | Kiraan detik, hon, larian, muzik, kemenangan, tepukan, bunga api — disintesis (tiada fail), kelantangan setiap saluran + utama. **Senyap secara lalai.** |
 
+## Pendaftaran kehadiran (QR) — pilihan
+
+1. **Kehadiran (QR)** → *Cipta majlis dalam talian* → muat naik **senarai semua staf** (Excel: Staff Name, Staff ID, Department).
+2. Paparkan QR di meja pendaftaran (*Papar skrin penuh*) atau *Cetak poster*.
+3. Staf imbas QR → masukkan **No. Pekerja** → semak maklumat → **Sahkan Kehadiran**.
+4. Laptop menyegerak setiap 5 saat → staf yang hadir **automatik menjadi peserta cabutan**. Staf tanpa telefon boleh disahkan manual di kaunter.
+
+Pelayan: Supabase projek `dashboard-unit-it-fkm`, skema `luckyduck` (lihat `supabase/migrations/`). Pendaftaran memerlukan internet; perlumbaan tidak.
+
 ## Aliran majlis
 
 1. Buka aplikasi → tetapkan kata laluan pentadbir (kali pertama).
@@ -69,4 +78,5 @@ Setiap push ke `main` → `.github/workflows/deploy.yml` (ujian → binaan → P
 - Semua HTML dinamik melalui `html```(auto-escape); CSP ketat; sel eksport dineutralkan daripada *formula injection*.
 - Log masuk melindungi panel pada komputer majlis. Oleh kerana tiada pelayan, sesiapa yang mempunyai akses penuh kepada pelayar/komputer boleh memeriksa IndexedDB — gunakan akaun komputer yang dikunci.
 - Data hanya wujud pada **pelayar & komputer itu**. Muat turun **sandaran JSON** selepas majlis. Mengosongkan data pelayar akan memadam rekod.
-- Supabase (berbilang peranti) belum dilaksanakan — lapisan `store.js` direka supaya boleh ditukar kemudian.
+- Supabase digunakan untuk modul kehadiran sahaja; cabutan & sejarah pemenang kekal di laptop (IndexedDB).
+- Token QR mengesahkan staf berada di majlis, bukan identiti mereka — sesiapa yang mempunyai QR dan No. Pekerja orang lain boleh mengesahkan bagi pihaknya. Tukar kod QR jika tersebar.

@@ -1,14 +1,18 @@
 /* sw.js — DIJANA oleh tools/build-sw.mjs. Jangan sunting terus; sunting tools/sw.template.js.
  * Strategi: SEMUA aset aplikasi dicache semasa pemasangan → aplikasi berfungsi sepenuhnya LUAR TALIAN
  * selepas lawatan pertama (penting untuk dewan majlis tanpa WiFi stabil). Data (IndexedDB) tidak disentuh. */
-var CACHE = 'ldr-41727ab34d90';
+var CACHE = 'ldr-4cce2d0f12ed';
 var ASSETS = [
   "./",
   "index.html",
+  "checkin.html",
   "manifest.webmanifest",
   "css/app.css",
+  "js/attendance.js",
   "js/audio.js",
   "js/auth.js",
+  "js/checkin.js",
+  "js/cloud.js",
   "js/db.js",
   "js/fx.js",
   "js/io.js",
@@ -20,6 +24,7 @@ var ASSETS = [
   "js/rng.js",
   "js/store.js",
   "js/util.js",
+  "js/views/attendance.js",
   "js/views/audit.js",
   "js/views/dashboard.js",
   "js/views/draw.js",
@@ -28,6 +33,7 @@ var ASSETS = [
   "js/views/participants.js",
   "js/views/prizes.js",
   "js/views/settings.js",
+  "vendor/qrcode.js",
   "vendor/three.module.min.js",
   "vendor/xlsx.full.min.js",
   "icons/apple-touch-icon.png",

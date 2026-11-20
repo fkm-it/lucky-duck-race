@@ -2,13 +2,20 @@ import { html, mount, toast, errMsg, confirmDialog, fmtNum, $ } from '../util.js
 import * as store from '../store.js';
 import { readSpreadsheet, downloadTemplate } from '../io.js';
 import { guessMapping, validateRows } from '../logic.js';
+import * as att from '../attendance.js';
 
 const STATUS_LABEL = { ok: ['Sah', 'tag-ok'], error: ['Ralat', 'tag-err'], dupFile: ['Pendua dalam fail', 'tag-warn'], exists: ['Sudah wujud', 'tag-info'] };
 
 export async function render(el, ctx) {
-  const st = { file: null, sheets: [], sheet: 0, header: true, map: null, result: null, filter: '' };
+  const params = new URLSearchParams(location.hash.split('?')[1] || '');
+  const attCfg = await att.getConfig();
+  const st = { file: null, sheets: [], sheet: 0, header: true, map: null, result: null, filter: '', target: attCfg && params.get('target') === 'attendance' ? 'attendance' : 'participants' };
 
   mount(el, html`
+    ${attCfg ? html`<fieldset class="radio-cards import-target"><legend class="sr-only">Destinasi import</legend>
+      <label class="rc"><input type="radio" name="tgt" value="attendance" ${st.target === 'attendance' ? 'checked' : ''}><b>📲 Senarai staf untuk pengesahan kehadiran (QR)</b><small>Dimuat naik ke pelayan majlis "${attCfg.eventName}". Staf masuk cabutan hanya selepas sahkan kehadiran.</small></label>
+      <label class="rc"><input type="radio" name="tgt" value="participants" ${st.target === 'participants' ? 'checked' : ''}><b>🦆 Terus sebagai peserta cabutan</b><small>Tanpa pengesahan kehadiran — semua dalam fail layak serta-merta.</small></label>
+    </fieldset>` : ''}
     <div class="steps">
       <span class="step on">1 Muat naik</span><span class="step" id="s2">2 Padankan lajur</span><span class="step" id="s3">3 Semak & sahkan</span>
     </div>
@@ -78,7 +85,7 @@ export async function render(el, ctx) {
       mount($('#preview'), html`<div class="card"><p class="muted">Pilih lajur <b>Staff Name</b> dan <b>Staff ID</b> untuk meneruskan.</p></div>`);
       return;
     }
-    st.result = validateRows(rows, st.map, await store.existingIds());
+    st.result = validateRows(rows, st.map, st.target === 'attendance' ? new Set() : await store.existingIds());
     drawPreview();
   }
 
@@ -106,12 +113,13 @@ export async function render(el, ctx) {
         ${summary.exists ? html`<label class="field inline"><span>Staff ID sedia ada:</span><select id="mode"><option value="skip">Langkau (kekalkan data semasa)</option><option value="update">Kemas kini nama & jabatan</option></select></label>` : ''}
         <div class="spacer"></div>
         <span class="muted">${summary.error + summary.dupFile ? fmtNum(summary.error + summary.dupFile) + ' baris tidak sah akan diabaikan' : 'Semua baris sah'}</span>
-        <button class="btn btn-primary" id="do-import" ${importable ? '' : 'disabled'}>Sahkan import (${fmtNum(summary.ok)} baharu)</button>
+        <button class="btn btn-primary" id="do-import" ${importable ? '' : 'disabled'}>${st.target === 'attendance' ? html`Muat naik ${fmtNum(summary.ok)} staf ke pelayan kehadiran` : html`Sahkan import (${fmtNum(summary.ok)} baharu)`}</button>
       </div></div>`);
     $('#s3').classList.add('on');
   }
 
   el.addEventListener('change', (e) => {
+    if (e.target.name === 'tgt') { st.target = e.target.value; if (st.sheets.length) validate(); }
     if (e.target.dataset.map) { st.map[e.target.dataset.map] = +e.target.value; validate(); }
     if (e.target.id === 'sheet') { st.sheet = +e.target.value; setupMap(); }
     if (e.target.id === 'hdr') { st.header = e.target.checked; setupMap(); }
@@ -120,6 +128,17 @@ export async function render(el, ctx) {
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.flt !== undefined) { st.filter = b.dataset.flt; drawPreview(); }
+    if (b.id === 'do-import' && st.target === 'attendance') {
+      const items = st.result.items.filter((x) => x.status === 'ok');
+      if (!(await confirmDialog('Muat naik senarai staf', 'Muat naik ' + items.length + ' staf ke pelayan kehadiran majlis "' + attCfg.eventName + '"? Staf sedia ada dikemas kini; status kehadiran dikekalkan.', { okLabel: 'Muat naik' }))) return;
+      b.disabled = true;
+      try {
+        const n = await att.uploadStaff(items, (d, t) => { b.textContent = 'Memuat naik ' + d + ' / ' + t + '…'; });
+        toast(n + ' staf dimuat naik ke senarai kehadiran.', 'success', 5000);
+        ctx.go('attendance');
+      } catch (err) { toast(errMsg(err), 'error', 6000); b.disabled = false; }
+      return;
+    }
     if (b.id === 'do-import') {
       const mode = $('#mode') ? $('#mode').value : 'skip';
       const items = st.result.items.filter((x) => x.status === 'ok' || x.status === 'exists');

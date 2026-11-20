@@ -407,3 +407,81 @@ body.stage-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ==========================================================================
+   KEHADIRAN (panel admin)
+   ========================================================================== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.import-target { margin-bottom: 14px; }
+.att-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 18px; margin-bottom: 18px; }
+.att-grid > .card { margin: 0; }
+@media (max-width: 1000px) { .att-grid { grid-template-columns: 1fr; } }
+.stat-grid-4 { grid-template-columns: repeat(4, 1fr); margin-bottom: 10px; }
+@media (max-width: 520px) { .stat-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+.qr-box { display: grid; justify-items: center; gap: 6px; }
+.qr-box svg { width: min(240px, 70vw); height: auto; background: #fff; border-radius: 12px; border: 1px solid var(--line); }
+.qr-url { color: var(--muted); word-break: break-all; text-align: center; }
+.link-danger { color: var(--danger); margin-top: 6px; }
+.pad { padding: 12px 16px; margin: 0; }
+.setup-card { max-width: 720px; display: grid; gap: 14px; }
+.setup-ic { font-size: 44px; }
+.setup-steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* QR skrin penuh di meja pendaftaran */
+.qr-full { position: fixed; inset: 0; z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.2vh; padding: 3vh;
+  color: #fff; background: radial-gradient(70% 60% at 50% 40%, #1E3A8A, #0B1220); text-align: center; }
+.qf-title { font: 900 clamp(26px, 4vw, 64px)/1 var(--font-display); background: linear-gradient(180deg, #FFF3B0, #FFD23F 50%, #F59E0B); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.qf-event { font-weight: 700; font-size: clamp(14px, 1.8vw, 28px); opacity: .9; }
+.qf-code svg { width: min(56vh, 80vw); height: auto; background: #fff; border-radius: 2vh; box-shadow: 0 0 0 1vh #FFD23F, 0 2vh 6vh rgba(0,0,0,.5); }
+.qf-cta { font-weight: 900; letter-spacing: .12em; font-size: clamp(18px, 2.6vw, 44px); color: #FFD23F; margin-top: 1.5vh; }
+.qf-sub { font-size: clamp(13px, 1.4vw, 22px); opacity: .9; }
+.qf-count { font-weight: 800; font-size: clamp(14px, 1.6vw, 26px); color: #86EFAC; }
+.qf-close { position: absolute; top: 2vh; right: 2vh; }
+
+/* Poster cetak */
+@media print {
+  body.printing-poster #print-root { display: grid; place-items: center; }
+  .qr-poster { text-align: center; padding: 10mm; display: grid; gap: 6mm; justify-items: center; }
+  .qp-title { font: 900 34pt/1 var(--font-display); }
+  .qp-event { font-size: 16pt; font-weight: 700; }
+  .qp-code svg { width: 120mm; height: 120mm; }
+  .qp-cta { font-size: 22pt; font-weight: 900; letter-spacing: .08em; }
+  .qp-steps { text-align: left; font-size: 13pt; }
+  .qp-foot { font-size: 11pt; }
+}
+
+/* ==========================================================================
+   LAMAN PENGESAHAN KEHADIRAN (telefon staf)
+   ========================================================================== */
+.ci-body { min-height: 100vh; background: radial-gradient(120% 60% at 50% 0%, #1E3A8A 0%, #0B1220 55%) fixed; }
+.ci { max-width: 460px; margin: 0 auto; padding: 22px 16px 32px; min-height: 100vh; display: flex; flex-direction: column; gap: 16px; }
+.ci .boot { color: #CBD5E1; min-height: 80vh; }
+.ci-head { text-align: center; color: #fff; padding-top: 8px; }
+.ci-duck { font-size: 52px; animation: bob 1.4s ease-in-out infinite; }
+.ci-brand { font: 900 26px/1.1 var(--font-display); background: linear-gradient(180deg, #FFF3B0, #FFD23F 50%, #F59E0B); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: .02em; }
+.ci-event { font-weight: 600; opacity: .9; margin-top: 4px; }
+.ci-card { background: var(--white); border-radius: 18px; padding: 22px 20px; box-shadow: var(--shadow-pop); display: grid; gap: 12px; }
+.ci-card h1 { font-size: 22px; }
+.ci-card p { margin: 0; }
+.ci-card form { display: grid; gap: 12px; margin-top: 6px; }
+.ci-input { font-size: 22px !important; letter-spacing: .08em; text-align: center; min-height: 54px !important; }
+.ci-err { color: var(--danger); font-weight: 600; min-height: 1.2em; font-size: 14px; }
+.ci-foot { text-align: center; color: #94A3B8; font-size: 12px; margin-top: auto; }
+.ci-msg { text-align: center; display: grid; gap: 10px; }
+.ci-msg-ic { font-size: 46px; }
+.ci-sheet-back { position: fixed; inset: 0; background: rgba(2,6,23,.6); z-index: 50; display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
+.ci-sheet { background: var(--white); width: 100%; max-width: 460px; border-radius: 22px 22px 0 0; padding: 26px 20px calc(20px + env(safe-area-inset-bottom)); display: grid; gap: 12px; justify-items: center; animation: up .25s ease-out; }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+@media (min-height: 700px) and (min-width: 480px) { .ci-sheet-back { align-items: center; } .ci-sheet { border-radius: 22px; } }
+.ci-avatar { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font: 800 28px var(--font); color: #3D2B00; background: linear-gradient(180deg, #FFE27A, #F5B301); box-shadow: 0 8px 20px -8px rgba(245,179,1,.8); }
+.ci-s-name { font-size: 22px; font-weight: 800; text-align: center; line-height: 1.25; }
+.ci-dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; width: 100%; background: #F8FAFC; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.ci-dl dt { color: var(--muted); font-size: 13px; }
+.ci-dl dd { margin: 0; font-weight: 700; text-align: right; }
+.ci-q { margin: 2px 0 0; }
+.ci-sheet .btn-block { width: 100%; }
+.ci-already { background: var(--success-50); color: var(--success); border-radius: 12px; padding: 12px 14px; font-weight: 600; text-align: center; width: 100%; }
+.ci-ok { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.ci-ok-ic { width: 84px; height: 84px; border-radius: 50%; background: var(--go); color: #fff; font-size: 46px; display: grid; place-items: center; box-shadow: 0 0 0 10px rgba(22,163,74,.15); animation: zoom .5s cubic-bezier(.2,1.6,.4,1) both; }
+.ci-ok-name { font-size: 22px; font-weight: 800; }
+.ci-ok-msg { margin: 6px 0 4px !important; }

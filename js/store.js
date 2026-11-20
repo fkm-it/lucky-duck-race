@@ -153,6 +153,53 @@ export async function importParticipants(items, mode = 'skip', fileName = '') {
   });
 }
 
+/**
+ * Segerakkan kehadiran (dari pelayan) → peserta cabutan setempat.
+ * - Hadir & belum wujud  → ditambah sebagai peserta LAYAK (sumber 'attendance', nombor itik baharu)
+ * - Hadir & sudah wujud  → tanda hadir sahaja (status menang tidak diubah)
+ * - Kehadiran dibatalkan → peserta sumber 'attendance' yang masih LAYAK dibuang (pemenang TIDAK disentuh)
+ * @param {Array<{staff_id,name,department,checked_in_at}>} rows
+ */
+export async function syncAttendees(rows) {
+  if (!rows || !rows.length) return { added: [], removed: 0 };
+  const now = new Date().toISOString();
+  return tx(['participants', 'settings', 'audit'], 'readwrite', async (s) => {
+    let no = await nextDuckNoIn(s);
+    const startNo = no;
+    const added = []; let removed = 0;
+    for (const r of rows) {
+      const staffId = normalizeStaffId(r.staff_id);
+      if (validateStaffId(staffId)) continue;
+      const cur = await reqP(s.participants.get(staffId));
+      if (r.checked_in_at) {
+        if (!cur) {
+          const p = {
+            staffId, name: cleanText(r.name, FIELD_LIMITS.name) || staffId, department: cleanText(r.department, FIELD_LIMITS.department),
+            duckNo: no++, status: STATUS.ELIGIBLE, winCount: 0, source: 'attendance', checkedInAt: r.checked_in_at, createdAt: now, updatedAt: now,
+          };
+          await reqP(s.participants.add(p));
+          added.push(p);
+        } else if (!cur.checkedInAt) {
+          await reqP(s.participants.put({ ...cur, checkedInAt: r.checked_in_at, updatedAt: now }));
+        }
+      } else if (cur && cur.source === 'attendance' && cur.status === STATUS.ELIGIBLE && !cur.winCount) {
+        await reqP(s.participants.delete(staffId));
+        removed++;
+      } else if (cur && cur.checkedInAt) {
+        await reqP(s.participants.put({ ...cur, checkedInAt: null, updatedAt: now }));
+      }
+    }
+    if (no !== startNo) await reqP(s.settings.put({ key: 'duckSeq', value: no }));
+    if (added.length || removed) {
+      await reqP(s.audit.add(auditRec('KEHADIRAN_SYNC', { ditambah: added.length, dibuang: removed, staf: added.slice(0, 30).map((p) => p.staffId) })));
+    }
+    return { added, removed };
+  });
+}
+
+export async function getKV(key) { const r = await get('settings', key); return r ? r.value : null; }
+export async function setKV(key, value) { await put('settings', { key, value }); }
+
 // ----------------------------------------------------------------------------- Hadiah
 
 export const listPrizes = async () => (await getAll('prizes')).sort((a, b) => (a.sequence - b.sequence) || a.id.localeCompare(b.id));

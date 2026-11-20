@@ -6,12 +6,14 @@ import * as auth from './auth.js';
 import * as store from './store.js';
 import * as sfx from './audio.js';
 import { openDb } from './db.js';
+import * as att from './attendance.js';
 
 const ROUTES = [
   { id: 'dashboard', label: 'Dashboard', icon: '◧', load: () => import('./views/dashboard.js') },
   { id: 'participants', label: 'Peserta', icon: '👥', load: () => import('./views/participants.js') },
   { id: 'import', label: 'Import Excel', icon: '⇪', load: () => import('./views/import.js') },
   { id: 'prizes', label: 'Hadiah', icon: '🎁', load: () => import('./views/prizes.js') },
+  { id: 'attendance', label: 'Kehadiran (QR)', icon: '📲', load: () => import('./views/attendance.js') },
   { id: 'draw', label: 'Mula Perlumbaan', icon: '🏁', load: () => import('./views/draw.js'), cta: true },
   { id: 'history', label: 'Sejarah Pemenang', icon: '🏆', load: () => import('./views/history.js') },
   { id: 'audit', label: 'Log Audit', icon: '🧾', load: () => import('./views/audit.js') },
@@ -21,7 +23,8 @@ const ROUTES = [
 const app = document.getElementById('app');
 
 const ctx = {
-  go(route) { location.hash = '#/' + route; },
+  go(route) { if (location.hash === '#/' + route) route_(); else location.hash = '#/' + route; },
+  reload() { return route_(); },
   async refreshStats() {
     const s = await store.stats();
     const box = $('#topstats');
@@ -99,7 +102,8 @@ function shell() {
         <main class="content" id="view" tabindex="-1"></main>
       </div>
     </div>`);
-  $('#btn-lock').addEventListener('click', () => { auth.logout(); store.audit('LOG_KELUAR', ''); showAuth(); });
+  $('#btn-lock').addEventListener('click', () => { att.stopAutoSync(); auth.logout(); store.audit('LOG_KELUAR', ''); showAuth(); });
+  att.onSync((res) => { if (res.added.length || res.removed) ctx.refreshStats().catch(() => {}); });
   $('#btn-menu').addEventListener('click', () => $('#side').classList.toggle('open'));
   const net = () => { const el = $('#net-status'); if (el) el.textContent = navigator.onLine ? '● Dalam talian' : '● Luar talian (data setempat)'; };
   window.addEventListener('online', net); window.addEventListener('offline', net); net();
@@ -136,7 +140,10 @@ async function route() {
 async function start() {
   sfx.configure(await store.getSettings());
   route();
+  if (await att.getConfig()) att.startAutoSync();
 }
+
+const route_ = () => route();
 
 window.addEventListener('hashchange', route);
 

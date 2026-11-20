@@ -104,3 +104,28 @@ test('sandaran eksport/import', async () => {
   assert.equal((await S.listParticipants()).length, n);
   await assert.rejects(S.importBackup({ app: 'lain' }), /tidak sah/);
 });
+
+test('kehadiran → peserta: tambah, idempoten, batal, pemenang dilindungi', async () => {
+  await S.deleteAllParticipants();
+  const t = '2026-11-20T08:00:00Z';
+  let r = await S.syncAttendees([
+    { staff_id: '000777', name: 'Hadir Satu', department: 'IT', checked_in_at: t },
+    { staff_id: '000778', name: 'Belum', department: 'IT', checked_in_at: null },
+    { staff_id: ' ab-9 ', name: 'Hadir Dua', department: 'HR', checked_in_at: t },
+  ]);
+  assert.equal(r.added.length, 2);
+  let all = await S.listParticipants();
+  assert.deepEqual(all.map((p) => p.staffId).sort(), ['000777', 'AB-9']);
+  assert.ok(all.every((p) => p.source === 'attendance' && p.status === 'ELIGIBLE'));
+  r = await S.syncAttendees([{ staff_id: '000777', name: 'Hadir Satu', department: 'IT', checked_in_at: t }]);
+  assert.equal(r.added.length, 0, 'idempoten');
+  // menang, kemudian kehadiran dibatalkan → pemenang TIDAK dibuang
+  const d = await S.executeDraw({ count: 1 });
+  const winner = d.winners[0].staffId;
+  const other = winner === '000777' ? 'AB-9' : '000777';
+  r = await S.syncAttendees([{ staff_id: winner, name: 'x', checked_in_at: null }, { staff_id: other, name: 'y', checked_in_at: null }]);
+  assert.equal(r.removed, 1);
+  all = await S.listParticipants();
+  assert.deepEqual(all.map((p) => p.staffId), [winner]);
+  await S.resetAllDraws();
+});

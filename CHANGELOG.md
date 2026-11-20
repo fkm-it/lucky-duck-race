@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — 2026-11-20
+- Modul **Kehadiran (QR)**: senarai staf dimuat naik ke pelayan majlis (Supabase); staf imbas QR → masukkan No. Pekerja → maklumat dipaparkan → **Sahkan Kehadiran**.
+- Staf yang hadir **automatik menjadi peserta cabutan** (laptop menyegerak setiap 5 saat, nombor itik diberi). Batal kehadiran membuang peserta yang belum menang.
+- Panel kehadiran: statistik langsung, buka/tutup pendaftaran, sahkan/batal manual di kaunter, QR skrin penuh & poster cetak, tukar kod QR.
+- Keselamatan: jadual dalam skema tidak terdedah; semua akses melalui RPC bertoken (token QR & kunci admin disimpan sebagai hash), had kadar setiap IP.
+
 ## 1.0.0 — 2026-11-20
 - Keluaran pertama Lucky Duck Race: perlumbaan itik 3D (Three.js, InstancedMesh) + mod 2D sandaran.
 - Import Excel/CSV (.xlsx, .xls, .csv) dengan pemetaan lajur, pratonton, validasi, pengesanan pendua; Staff ID sentiasa teks.
