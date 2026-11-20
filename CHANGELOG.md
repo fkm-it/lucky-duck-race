@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0 — 2026-11-20 — Muzik itik berlari
+
+- Muzik semasa perlumbaan kini fail `audio/itik-berlari.mp3` (gelung, fade masuk/keluar, dicache untuk offline). Muzik rock sintesis kekal sebagai sandaran jika fail gagal dimuat.
+
 ## 2.1.0 — 2026-11-20 — Maskot 3D
 
 - 4 maskot Rockstar Duck (gitar, berlari, trofi, thumbs up) kini render 3D sebenar (Three.js, `tools/mascot3d/`, `tools/render-mascots.py`) menggantikan SVG rata.

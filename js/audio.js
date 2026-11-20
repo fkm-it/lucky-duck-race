@@ -1,5 +1,5 @@
 /**
- * audio.js — Semua bunyi disintesis dengan Web Audio (tiada fail audio → saiz kecil & berfungsi offline).
+ * audio.js — Bunyi kesan disintesis dengan Web Audio; muzik perlumbaan dari audio/itik-berlari.mp3 (dicache SW, berfungsi offline).
  * Saluran: countdown, horn, running, music, victory, applause, fireworks.
  * Lalai SENYAP: tiada bunyi sehingga admin hidupkan dalam Tetapan.
  */
@@ -13,7 +13,7 @@ let noiseBuf = null;
 
 export const CHANNELS = [
   ['countdown', 'Kiraan detik'], ['horn', 'Kord gitar permulaan'], ['running', 'Bunyi itik berlari'],
-  ['music', 'Muzik rock latar perlumbaan'], ['victory', 'Riff gitar kemenangan'], ['applause', 'Tepukan'], ['fireworks', 'Bunga api'],
+  ['music', 'Muzik itik berlari'], ['victory', 'Riff gitar kemenangan'], ['applause', 'Tepukan'], ['fireworks', 'Bunga api'],
 ];
 
 export function configure(settings) {
@@ -114,7 +114,7 @@ function kick(ch, at, vol = 0.5) {
   o.connect(g); g.connect(gains[ch]); o.start(t); o.stop(t + 0.25);
 }
 
-export function unlock() { ensure(); }
+export function unlock() { if (ensure()) loadMusic(); }
 
 export function countdownBeep(final = false) {
   if (!ensure()) return;
@@ -151,11 +151,49 @@ export function startRunning() {
 
 export function stopRunning() { if (runningNode) { runningNode.stop(); runningNode = null; } }
 
-/** Muzik latar ringkas: bes + arpeggio gelung (tempo laju). */
+/* Muzik perlumbaan: fail audio/itik-berlari.mp3 (gelung). Jika gagal dimuat, guna muzik rock sintesis. */
+const MUSIC_URL = 'audio/itik-berlari.mp3';
+let musicBuf = null;
+let musicLoad = null;
+let musicSrc = null;
+let musicWanted = false;
+
+function loadMusic() {
+  if (!musicLoad) {
+    musicLoad = fetch(MUSIC_URL)
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+      .then((ab) => new Promise((ok, no) => ctx.decodeAudioData(ab, ok, no)))
+      .then((buf) => { musicBuf = buf; return buf; })
+      .catch(() => { musicLoad = null; return null; });
+  }
+  return musicLoad;
+}
+
+function playFile() {
+  const src = ctx.createBufferSource();
+  src.buffer = musicBuf; src.loop = true;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.4);
+  src.connect(g); g.connect(gains.music);
+  src.start();
+  musicSrc = { src, g };
+}
+
 export function startMusic() {
-  if (!ensure() || musicTimer) return;
-  const beat = 60 / 150; // 150 BPM
-  const riff = [82.41, 82.41, 98, 82.41, 110, 82.41, 98, 73.42]; // E E G E A E G D
+  if (!ensure() || musicTimer || musicSrc) return;
+  musicWanted = true;
+  if (musicBuf) { playFile(); return; }
+  loadMusic().then((buf) => {
+    if (!musicWanted || musicTimer || musicSrc) return;
+    if (buf) playFile(); else startSynthMusic();
+  });
+}
+
+/** Muzik sandaran (sintesis): bes + riff gitar gelung, 150 BPM. */
+function startSynthMusic() {
+  const beat = 60 / 150;
+  const riff = [82.41, 82.41, 98, 82.41, 110, 82.41, 98, 73.42]; /* E E G E A E G D */
   let bar = 0;
   const playBar = () => {
     for (let i = 0; i < 8; i++) {
@@ -171,7 +209,18 @@ export function startMusic() {
   musicTimer = setInterval(playBar, beat * 4 * 1000);
 }
 
-export function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+export function stopMusic() {
+  musicWanted = false;
+  if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  if (musicSrc) {
+    const { src, g } = musicSrc; musicSrc = null;
+    try {
+      const t = ctx.currentTime;
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.6);
+      src.stop(t + 0.65);
+    } catch { /* sudah berhenti */ }
+  }
+}
 
 export function victory() {
   if (!ensure()) return;
