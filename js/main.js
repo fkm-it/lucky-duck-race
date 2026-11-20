@@ -153,6 +153,14 @@ window.addEventListener('hashchange', route);
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e));
+      // Versi baharu dideploy → muat semula sekali supaya tiada campuran fail lama/baharu (kecuali semasa perlumbaan)
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadController || reloaded || document.body.classList.contains('stage-open')) return;
+        reloaded = true;
+        location.reload();
+      });
     }
     if (auth.isLoggedIn()) start(); else showAuth();
   } catch (e) {
