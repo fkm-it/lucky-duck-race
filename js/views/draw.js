@@ -2,6 +2,7 @@ import { html, mount, toast, errMsg, fmtNum, $ } from '../util.js';
 import * as store from '../store.js';
 import { openStage } from '../race.js';
 import { icon } from '../icons.js';
+import * as sync from '../sync.js';
 
 export async function render(el, ctx) {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -48,6 +49,7 @@ export async function render(el, ctx) {
           <li class="${settings.soundEnabled ? 'ok' : ''}">Bunyi ${settings.soundEnabled ? 'dihidupkan' : 'dimatikan'} — <a href="#/settings">ubah</a></li>
           <li class="ok">Mod paparan: ${settings.renderMode === '2d' ? '2D' : '3D'} · kualiti ${settings.quality === 'low' ? 'rendah' : 'tinggi'}</li>
           <li class="ok">Tempoh perlumbaan ±${settings.raceDuration}s</li>
+          ${sync.isCloud() ? html`<li class="${sync.isControl() ? 'ok' : ''}">${sync.isControl() ? 'Peranti ini ialah Peranti Kawalan (boleh cabut walaupun luar talian)' : html`Cabutan hanya di Peranti Kawalan: <b>${sync.controlName() || '—'}</b> — <a href="#/settings">ambil alih</a>`}</li>` : ''}
         </ul>
         <p class="tiny muted">Pintasan pada pentas: <kbd>Space</kbd> mula / seterusnya · <kbd>F</kbd> skrin penuh · <kbd>M</kbd> bunyi · <kbd>Esc</kbd> tutup.</p>
       </section>
@@ -57,7 +59,8 @@ export async function render(el, ctx) {
     const n = parseInt($('#d-count').value, 10);
     const max = maxFor();
     let msg = '';
-    if (!pool.length) msg = 'Tiada peserta layak. Import peserta atau pulihkan pemenang.';
+    if (sync.isCloud() && !sync.isControl()) msg = 'Peranti ini bukan Peranti Kawalan. Cabutan hanya boleh dibuat di ' + (sync.controlName() || 'Peranti Kawalan') + ' (atau ambil alih di Tetapan Sistem).';
+    else if (!pool.length) msg = 'Tiada peserta layak. Import peserta atau pulihkan pemenang.';
     else if (!Number.isInteger(n) || n < 1) msg = 'Bilangan pemenang mesti sekurang-kurangnya 1.';
     else if (n > max) msg = 'Maksimum ' + max + (cur() ? ' (baki hadiah / peserta layak).' : ' (peserta layak).');
     mount($('#d-warn'), msg ? html`<div class="alert alert-err">${msg}</div>` : '');
@@ -75,6 +78,7 @@ export async function render(el, ctx) {
   $('#d-open').addEventListener('click', async () => {
     if (!warn()) return;
     try {
+      if (sync.isCloud()) { $('#d-open').disabled = true; await sync.flush(5000); $('#d-open').disabled = false; } // data terkini sebelum cabutan (diabaikan jika luar talian)
       const fresh = await store.eligiblePool();
       const c = cur();
       const drew = await openStage({ pool: fresh, prize: c ? c.prize : null, count: parseInt($('#d-count').value, 10), revealMode: st.reveal });

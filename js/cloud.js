@@ -16,6 +16,9 @@ const MESSAGES = {
   FORBIDDEN: 'Kunci pentadbir tidak sah untuk majlis ini.',
   WEAK_SECRET: 'Rahsia majlis tidak sah.',
   BAD_INPUT: 'Data tidak sah (maksimum 5,000 baris setiap muat naik).',
+  BAD_LOGIN: 'Kod majlis atau kata laluan salah.',
+  WEAK_PASSWORD: 'Kata laluan mesti sekurang-kurangnya 8 aksara dan mengandungi huruf serta nombor.',
+  SESSION: 'Sesi majlis awan telah tamat atau ditamatkan. Sertai semula majlis di Tetapan Sistem.',
 };
 
 export class CloudError extends Error {
@@ -36,7 +39,7 @@ export async function rpc(fn, args = {}, { timeout = 15000 } = {}) {
       referrerPolicy: 'no-referrer',
     });
   } catch (e) {
-    throw new CloudError('NETWORK', 'Tiada sambungan internet ke pelayan kehadiran. Semak WiFi / data dan cuba lagi.');
+    throw new CloudError('NETWORK', 'Tiada sambungan internet ke pelayan. Semak WiFi / data dan cuba lagi.');
   } finally { clearTimeout(t); }
   const text = await res.text();
   let body = null;

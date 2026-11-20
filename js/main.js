@@ -9,6 +9,7 @@ import * as store from './store.js';
 import * as sfx from './audio.js';
 import { openDb } from './db.js';
 import * as att from './attendance.js';
+import * as sync from './sync.js';
 
 /* nav: dipapar di sidebar. Laluan tanpa nav = alias / halaman dalaman. */
 const ROUTES = [
@@ -117,11 +118,18 @@ async function showAuth() {
         <label class="field field-ic"><span>Kata laluan</span>${icon('lock')}<input type="password" id="pw1" required minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}"></label>
         ${first ? html`<label class="field field-ic"><span>Sahkan kata laluan</span>${icon('lock')}<input type="password" id="pw2" required minlength="8" autocomplete="new-password"></label>` : ''}
         <button class="btn btn-purple btn-lg btn-block" type="submit">${first ? 'Simpan & masuk' : 'Masuk'}</button>
+        ${first ? html`<div class="auth-or"><span>atau</span></div>
+        <button class="btn btn-ghost btn-block" type="button" id="auth-join">☁ Sertai majlis sedia ada (kod majlis)</button>` : ''}
         <a href="#/home" class="auth-back" id="auth-back">← Kembali ke Paparan Utama</a>
       </form>
     </div>`);
   $('#pw1').focus();
   $('#auth-back').addEventListener('click', (e) => { e.preventDefault(); pendingRoute = ''; if (location.hash === '#/home') showHome(); else location.hash = '#/home'; });
+  const jb = $('#auth-join');
+  if (jb) jb.addEventListener('click', async () => {
+    const { joinFlow } = await import('./views/settings.js');
+    await joinFlow(null, { afterJoin: async () => { pendingRoute = ''; await start(); ctx.go('dashboard'); } });
+  });
   $('#auth-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -170,8 +178,36 @@ function shell() {
     </div>`);
   $('#btn-lock').addEventListener('click', () => { att.stopAutoSync(); auth.logout(); store.audit('LOG_KELUAR', ''); location.hash = '#/home'; });
   $('#btn-menu').addEventListener('click', () => $('#side').classList.toggle('open'));
-  const net = () => { const el = $('#net-status'); if (el) el.textContent = navigator.onLine ? '● Dalam talian' : '● Luar talian (data setempat)'; };
-  window.addEventListener('online', net); window.addEventListener('offline', net); net();
+  window.addEventListener('online', paintNet); window.addEventListener('offline', paintNet); paintNet();
+}
+
+function paintNet() {
+  const el = $('#net-status');
+  if (!el) return;
+  const st = sync.state;
+  el.className = 'tiny net-status';
+  if (!sync.isCloud()) { el.textContent = (navigator.onLine ? '● Dalam talian' : '● Luar talian') + ' · data pelayar ini sahaja'; return; }
+  const who = sync.isControl() ? ' · ★ Peranti Kawalan' : '';
+  if (st.sessionLost) { el.textContent = '☁ Sesi awan tamat — sertai semula di Tetapan'; el.classList.add('net-err'); return; }
+  if (!st.online) { el.textContent = '☁ Luar talian' + (st.pending ? ' · ' + st.pending + ' perubahan menunggu' : '') + who; el.classList.add('net-warn'); return; }
+  el.textContent = '☁ ' + (st.cfg.code || '') + (st.pending || st.syncing ? ' · menyegerak…' : ' · disegerak') + who;
+  el.classList.add('net-ok');
+}
+
+/** Data berubah dari peranti lain → muat semula paparan jika selamat (tiada borang / modal / pentas aktif). */
+let changeTimer = null;
+function onRemoteChange(stores) {
+  if (stores.includes('settings')) { store.invalidateSettings(); store.getSettings().then((s) => sfx.configure(s)).catch(() => {}); }
+  if (stores.includes('participants') && sync.isControl()) store.fixDuckNumbers().catch(() => {});
+  clearTimeout(changeTimer);
+  changeTimer = setTimeout(() => {
+    if (!auth.isLoggedIn() || !$('#view')) return;
+    ctx.refreshStats().catch(() => {});
+    const busy = document.body.classList.contains('stage-open') || document.querySelector('.modal-back')
+      || (document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName));
+    const live = ['dashboard', 'participants', 'history', 'reports', 'audit', 'draw', 'prizes'];
+    if (!busy && live.includes(routeId() || 'dashboard')) route();
+  }, 400);
 }
 
 let syncHooked = false;
@@ -207,7 +243,16 @@ async function route() {
 
 async function start() {
   sfx.configure(await store.getSettings());
-  if (!syncHooked) { syncHooked = true; att.onSync((res) => { if (res.added.length || res.removed) ctx.refreshStats().catch(() => {}); }); }
+  if (!syncHooked) {
+    syncHooked = true;
+    att.onSync((res) => { if (res.added.length || res.removed) ctx.refreshStats().catch(() => {}); });
+    sync.on((type, detail) => {
+      if (type === 'status' || type === 'control') paintNet();
+      if (type === 'change') onRemoteChange(detail);
+      if (type === 'conflict') toast(detail + ' perubahan anda tidak disimpan kerana data telah diubah di peranti lain. Paparan dikemas kini dengan data terkini.', 'error', 7000);
+      if (type === 'control') toast(sync.isControl() ? 'Peranti ini kini Peranti Kawalan.' : 'Peranti Kawalan kini ' + sync.controlName() + '.', 'info', 6000);
+    });
+  }
   if (await att.getConfig()) att.startAutoSync();
 }
 
@@ -216,6 +261,7 @@ window.addEventListener('hashchange', route);
 (async function boot() {
   try {
     await openDb();
+    await sync.init();
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e));

@@ -1,13 +1,13 @@
 {
   "name": "rock-the-draw",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Rock The Draw \u2014 Let's Rock. Let's Win! Kehadiran QR + cabutan bertuah perlumbaan itik rockstar 3D",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "build:sw": "node tools/build-sw.mjs",
     "check": "node tools/build-sw.mjs --check && node tools/check.mjs",
     "dev": "python3 -m http.server 8080",
-    "e2e": "python3 tools/e2e.py && python3 tools/e2e_attendance.py"
+    "e2e": "python3 tools/e2e.py && python3 tools/e2e_attendance.py && python3 tools/e2e_cloud.py"
   },
   "author": "",
   "license": "UNLICENSED",

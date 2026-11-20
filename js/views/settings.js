@@ -2,12 +2,16 @@ import { html, mount, toast, errMsg, confirmDialog, modal, download, readFileAs,
 import * as store from '../store.js';
 import * as auth from '../auth.js';
 import * as sfx from '../audio.js';
+import * as sync from '../sync.js';
+import * as att from '../attendance.js';
+import { fmtTime } from '../util.js';
 
 export async function render(el, ctx) {
   const s = await store.getSettings();
   const pct = (v) => Math.round(v * 100);
 
   mount(el, html`
+    <section class="card cloud-card" id="cloud-card"></section>
     <div class="grid-2">
       <section class="card">
         <div class="card-head"><h3>Majlis & paparan</h3></div>
@@ -45,7 +49,7 @@ export async function render(el, ctx) {
       <section class="card">
         <div class="card-head"><h3>Keselamatan</h3></div>
         <button class="btn btn-ghost" id="s-pw">🔑 Tukar kata laluan pentadbir</button>
-        <p class="tiny muted">Data disimpan dalam pelayar komputer ini sahaja. Gunakan akaun komputer yang dikunci dan buat sandaran selepas setiap majlis.</p>
+        <p class="tiny muted">${sync.isCloud() ? 'Kata laluan ini juga kata laluan majlis awan (untuk menyertai dari pelayar lain).' : 'Data disimpan dalam pelayar komputer ini sahaja. Gunakan akaun komputer yang dikunci dan buat sandaran selepas setiap majlis.'}</p>
       </section>
 
       <section class="card">
@@ -129,10 +133,150 @@ export async function render(el, ctx) {
           validate: async (w) => {
             const a = w.querySelector('#pw1').value;
             if (a !== w.querySelector('#pw2').value) { toast('Kata laluan baharu tidak sepadan.', 'error'); return false; }
-            try { await auth.changePassword(w.querySelector('#pw0').value, a); toast('Kata laluan ditukar.', 'success'); return true; } catch (err) { toast(errMsg(err), 'error'); return false; }
+            try {
+              if (sync.isCloud()) await sync.changeCloudPassword(w.querySelector('#pw0').value, a);
+              await auth.changePassword(w.querySelector('#pw0').value, a); toast('Kata laluan ditukar.', 'success'); return true; } catch (err) { toast(errMsg(err), 'error'); return false; }
           },
         }],
       });
     }
   });
+
+  renderCloud($('#cloud-card'), ctx);
+  const off = sync.on((type) => { if (type === 'status' || type === 'control') { if (!document.body.contains(el)) return off(); paintStatus(); } });
+}
+
+// ----------------------------------------------------------------------------- Penyegerakan awan
+
+function statusLine() {
+  const st = sync.state;
+  if (st.sessionLost) return html`<span class="tag tag-err">● Sesi tamat — sertai semula</span>`;
+  if (!st.online) return html`<span class="tag tag-warn">● Luar talian${st.pending ? ' · ' + st.pending + ' perubahan menunggu' : ''}</span>`;
+  if (st.syncing || st.pending) return html`<span class="tag tag-info">⟳ Menyegerak${st.pending ? ' (' + st.pending + ')' : ''}</span>`;
+  return html`<span class="tag tag-ok">● Disegerak${st.lastSync ? ' · ' + fmtTime(st.lastSync.toISOString()) : ''}</span>`;
+}
+function paintStatus() { const b = $('#cl-status'); if (b) mount(b, statusLine()); }
+
+async function renderCloud(box, ctx) {
+  const dev = await sync.device();
+  if (!sync.isCloud()) {
+    mount(box, html`
+      <div class="card-head"><h3>☁ Penyegerakan awan (berbilang pelayar / laptop)</h3><span class="tag">Komputer ini sahaja</span></div>
+      <p class="muted">Sekarang data cabutan disimpan dalam pelayar ini sahaja. Aktifkan penyegerakan supaya <b>semua pelayar dan laptop</b> yang log masuk
+        dengan <b>kod majlis + kata laluan</b> melihat data yang sama. Sistem tetap berfungsi <b>tanpa internet</b> — perubahan dihantar bila online semula.</p>
+      <div class="row-actions">
+        <button class="btn btn-purple" id="cl-enable">☁ Aktifkan untuk majlis ini (komputer ini jadi Peranti Kawalan)</button>
+        <button class="btn btn-ghost" id="cl-join">⇣ Sertai majlis awan sedia ada</button>
+      </div>`);
+  } else {
+    const c = sync.state.cfg;
+    const me = sync.isControl();
+    mount(box, html`
+      <div class="card-head"><h3>☁ Penyegerakan awan</h3><span id="cl-status">${statusLine()}</span></div>
+      <div class="cloud-grid">
+        <div><span class="muted tiny">Kod majlis</span><div class="cloud-code mono">${c.code}</div><span class="tiny muted">${c.name || ''}</span></div>
+        <div><span class="muted tiny">Peranti ini</span><div><b>${dev.name}</b> ${me ? html`<span class="tag tag-gold">★ Peranti Kawalan</span>` : html`<span class="tag">Peranti biasa</span>`}</div>
+          <span class="tiny muted">Peranti Kawalan: ${sync.controlName() || '—'}</span></div>
+      </div>
+      <p class="tiny muted">Log masuk di pelayar / laptop lain: Tetapan → <b>Sertai majlis awan</b> (atau skrin pertama) → masukkan kod <b>${c.code}</b> dan kata laluan pentadbir.
+        ${me ? 'Peranti ini boleh membuat cabutan walaupun tanpa internet.' : 'Cabutan hanya dibuat di Peranti Kawalan. Tanpa internet, peranti ini baca sahaja.'}</p>
+      <div class="row-actions">
+        <button class="btn btn-ghost btn-sm" id="cl-now">⟳ Segerak sekarang</button>
+        <button class="btn btn-ghost btn-sm" id="cl-name">✎ Nama peranti</button>
+        ${me ? '' : html`<button class="btn btn-purple btn-sm" id="cl-claim">★ Jadikan peranti ini Peranti Kawalan</button>`}
+        <button class="btn btn-ghost btn-sm link-danger" id="cl-leave">⏏ Putuskan peranti ini</button>
+      </div>`);
+  }
+  box.onclick = async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    try {
+      if (b.id === 'cl-enable') return await enableFlow(ctx);
+      if (b.id === 'cl-join') return await joinFlow(ctx);
+      if (b.id === 'cl-now') { b.disabled = true; await sync.tick(); toast('Data disegerak.', 'success'); b.disabled = false; return; }
+      if (b.id === 'cl-name') {
+        const v = await modal({ title: 'Nama peranti', body: html`<label class="field"><span>Nama (cth. Laptop Pentas, Kaunter 2)</span><input id="dn" maxlength="80" value="${dev.name}"></label>`,
+          buttons: [{ label: 'Cancel', value: null }, { label: 'Simpan', kind: 'primary', value: true, validate: (w) => { sync.setDeviceName(w.querySelector('#dn').value); return true; } }] });
+        if (v) { toast('Nama peranti disimpan. Ia dikemas kini di pelayan bila anda menyertai semula / mengambil alih kawalan.', 'success'); renderCloud(box, ctx); }
+        return;
+      }
+      if (b.id === 'cl-claim') {
+        if (!(await confirmDialog('Jadikan peranti ini Peranti Kawalan?', 'Hanya Peranti Kawalan boleh membuat cabutan dan bekerja tanpa internet. ' + (sync.controlName() || 'Peranti lain') + ' akan menjadi peranti biasa. Pastikan laptop kawalan asal tidak sedang membuat cabutan secara luar talian.', { okLabel: 'Ambil alih' }))) return;
+        await sync.flush(8000);
+        await sync.claimControl(); toast('Peranti ini kini Peranti Kawalan.', 'success'); att.startAutoSync(); return renderCloud(box, ctx);
+      }
+      if (b.id === 'cl-leave') {
+        const msg = sync.state.pending ? 'AMARAN: ' + sync.state.pending + ' perubahan belum dihantar ke awan dan akan kekal di pelayar ini sahaja. ' : '';
+        if (!(await confirmDialog('Putuskan peranti ini daripada majlis awan?', msg + 'Data sedia ada kekal dalam pelayar ini, tetapi tidak lagi disegerak.', { danger: true, okLabel: 'Putuskan', typeToConfirm: 'PUTUS' }))) return;
+        await sync.leave(); toast('Peranti diputuskan daripada majlis awan.'); return ctx.reload();
+      }
+    } catch (err) { toast(errMsg(err), 'error', 7000); b.disabled = false; }
+  };
+}
+
+async function enableFlow(ctx) {
+  const s = await store.getSettings();
+  let cfg = await att.getConfig();
+  await modal({
+    title: 'Aktifkan penyegerakan awan',
+    body: html`<p class="muted">Semua data dalam pelayar ini (peserta, hadiah, pemenang, log, tetapan) akan dimuat naik. Komputer ini menjadi <b>Peranti Kawalan</b>.
+        Anda akan menerima <b>kod majlis</b> untuk log masuk dari pelayar lain.</p>
+      ${cfg ? '' : html`<label class="field"><span>Nama majlis</span><input id="ce-name" maxlength="160" value="${s.eventName || ''}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>`}
+      <label class="field"><span>Kata laluan majlis (min. 8 aksara, huruf + nombor)</span><input type="password" id="ce-pw1" autocomplete="new-password"></label>
+      <label class="field"><span>Sahkan kata laluan</span><input type="password" id="ce-pw2" autocomplete="new-password"></label>
+      <p class="tiny muted">Kata laluan ini juga menjadi kata laluan log masuk pentadbir di pelayar ini.</p>`,
+    buttons: [{ label: 'Cancel', value: null }, {
+      label: 'Aktifkan', kind: 'primary', value: true,
+      validate: async (w) => {
+        const pw = w.querySelector('#ce-pw1').value;
+        const p = auth.passwordProblem(pw);
+        if (p) { toast(p, 'error'); return false; }
+        if (pw !== w.querySelector('#ce-pw2').value) { toast('Kata laluan tidak sepadan.', 'error'); return false; }
+        const btn = w.querySelector('.modal-foot .btn-primary'); if (btn) { btn.disabled = true; btn.textContent = 'Memuat naik…'; }
+        try {
+          if (!cfg) cfg = await att.createEvent((w.querySelector('#ce-name') || {}).value || s.eventName);
+          const c = await sync.enable(cfg, pw);
+          await auth.setPassword(pw);
+          await store.audit('AWAN_AKTIF', c.code);
+          att.startAutoSync();
+          toast('Penyegerakan awan aktif. Kod majlis: ' + c.code, 'success', 8000);
+          return true;
+        } catch (err) { toast(errMsg(err), 'error', 7000); if (btn) { btn.disabled = false; btn.textContent = 'Aktifkan'; } return false; }
+      },
+    }],
+  });
+  ctx.reload();
+}
+
+export async function joinFlow(ctx, { afterJoin } = {}) {
+  let done = false;
+  await modal({
+    title: 'Sertai majlis awan',
+    body: html`<p class="muted">Masukkan kod majlis (dipaparkan di Tetapan Sistem pada laptop kawalan) dan kata laluan pentadbir majlis.</p>
+      <p class="alert alert-warn tiny">Data cabutan yang ada dalam pelayar ini sekarang akan <b>digantikan</b> dengan data majlis awan.</p>
+      <label class="field"><span>Kod majlis</span><input id="cj-code" class="mono" maxlength="20" placeholder="RTD-XXXXXX" autocapitalize="characters" autocomplete="off"></label>
+      <label class="field"><span>Kata laluan</span><input type="password" id="cj-pw" autocomplete="current-password"></label>`,
+    buttons: [{ label: 'Cancel', value: null }, {
+      label: 'Sertai', kind: 'primary', value: true,
+      validate: async (w) => {
+        const code = w.querySelector('#cj-code').value.trim();
+        const pw = w.querySelector('#cj-pw').value;
+        if (!code || !pw) { toast('Isi kod majlis dan kata laluan.', 'error'); return false; }
+        const btn = w.querySelector('.modal-foot .btn-primary'); if (btn) { btn.disabled = true; btn.textContent = 'Memuat turun data…'; }
+        try {
+          const c = await sync.join(code, pw);
+          await auth.setPassword(pw);
+          store.invalidateSettings();
+          await store.audit('AWAN_SERTAI', c.code);
+          att.startAutoSync();
+          toast('Berjaya menyertai majlis ' + (c.name || c.code) + '.', 'success', 6000);
+          done = true;
+          return true;
+        } catch (err) { toast(errMsg(err), 'error', 7000); if (btn) { btn.disabled = false; btn.textContent = 'Sertai'; } return false; }
+      },
+    }],
+  });
+  if (done && afterJoin) return afterJoin();
+  if (done && ctx) ctx.go('dashboard');
+  return done;
 }

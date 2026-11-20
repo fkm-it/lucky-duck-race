@@ -6,6 +6,7 @@
 import { tx, reqP, getAll, get, put, count, openDb } from './db.js';
 import { pickUnique, randomHex, sha256Hex } from './rng.js';
 import { cleanText, normalizeStaffId, validateStaffId, FIELD_LIMITS, prizeStatus } from './logic.js';
+import * as sync from './sync.js';
 
 export const STATUS = Object.freeze({ ELIGIBLE: 'ELIGIBLE', WINNER: 'WINNER' });
 
@@ -28,11 +29,16 @@ export const DEFAULT_SETTINGS = Object.freeze({
 });
 
 let settingsCache = null;
+const DEVICE_KEYS = ['renderMode', 'quality', 'soundEnabled', 'masterVolume', 'volumes'];
+/** Panggil selepas tetapan diubah oleh peranti lain (penyegerakan awan). */
+export function invalidateSettings() { settingsCache = null; }
 
 export async function getSettings() {
   if (settingsCache) return settingsCache;
-  const rec = await get('settings', 'app');
-  const v = rec ? rec.value : {};
+  const [rec, loc] = await Promise.all([get('settings', 'app'), get('settings', 'appLocal')]);
+  // 'app' disegerak antara peranti; 'appLocal' (bunyi, mod paparan, kualiti) khusus untuk peranti ini
+  const v = { ...(rec ? rec.value : {}) };
+  if (loc) Object.assign(v, loc.value);
   settingsCache = { ...DEFAULT_SETTINGS, ...v, volumes: { ...DEFAULT_SETTINGS.volumes, ...(v.volumes || {}) } };
   if (settingsCache.subtitle === 'LET THE LUCK RACE BEGIN!') settingsCache.subtitle = DEFAULT_SETTINGS.subtitle;
   return settingsCache;
@@ -46,7 +52,14 @@ export async function saveSettings(patch) {
   next.eventLocation = cleanText(next.eventLocation, 120);
   next.eventDate = /^\d{4}-\d{2}-\d{2}$/.test(next.eventDate || '') ? next.eventDate : '';
   next.subtitle = cleanText(next.subtitle, 120) || DEFAULT_SETTINGS.subtitle;
-  await put('settings', { key: 'app', value: next });
+  const shared = {}; const local = {};
+  Object.keys(next).forEach((k) => { (DEVICE_KEYS.includes(k) ? local : shared)[k] = next[k]; });
+  const cur0 = (await get('settings', 'app')) || { value: {} };
+  const sharedChanged = Object.keys(shared).some((k) => JSON.stringify(shared[k]) !== JSON.stringify(cur0.value[k]));
+  await tx('settings', 'readwrite', async (s) => {
+    if (sharedChanged) await reqP(s.settings.put({ key: 'app', value: shared }));
+    await reqP(s.settings.put({ key: 'appLocal', value: local }));
+  });
   settingsCache = next;
   return next;
 }
@@ -54,7 +67,8 @@ export async function saveSettings(patch) {
 // ----------------------------------------------------------------------------- Audit
 
 function auditRec(action, detail) {
-  return { at: new Date().toISOString(), action, detail: typeof detail === 'string' ? detail : JSON.stringify(detail) };
+  // ID teks unik (bukan autoIncrement) supaya log dari beberapa peranti tidak bertindih semasa penyegerakan
+  return { id: 'A' + Date.now().toString(36) + randomHex(4), at: new Date().toISOString(), action, detail: typeof detail === 'string' ? detail : JSON.stringify(detail) };
 }
 
 export async function audit(action, detail = '') {
@@ -63,7 +77,7 @@ export async function audit(action, detail = '') {
 
 export async function listAudit(limit = 500) {
   const all = await getAll('audit');
-  return all.reverse().slice(0, limit);
+  return all.sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, limit);
 }
 
 // ----------------------------------------------------------------------------- Peserta
@@ -281,6 +295,9 @@ export async function executeDraw(opt) {
 }
 
 async function executeDrawInner({ prizeId = '', count: wanted, revealMode = 'one' }) {
+  if (sync.isCloud() && !sync.isControl()) {
+    throw new Error('Cabutan hanya boleh dibuat di Peranti Kawalan (' + (sync.controlName() || '—') + '). Jadikan peranti ini Peranti Kawalan di Tetapan Sistem jika perlu.');
+  }
   const st = await getSettings();
   const k = parseInt(wanted, 10);
   if (!Number.isInteger(k) || k < 1) throw new Error('Bilangan pemenang mesti sekurang-kurangnya 1.');
@@ -409,6 +426,26 @@ export async function resetAllDraws() {
   });
 }
 
+/**
+ * Nombor itik berganda (dua peranti menambah peserta serentak) → nombor baharu bagi rekod yang lebih kemudian.
+ * Hanya dijalankan oleh Peranti Kawalan. Pemenang tidak dinomborkan semula.
+ */
+export async function fixDuckNumbers() {
+  return tx(['participants', 'settings'], 'readwrite', async (s) => {
+    const all = await reqP(s.participants.getAll());
+    const seen = new Map();
+    const dup = [];
+    all.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '') || a.staffId.localeCompare(b.staffId));
+    for (const p of all) { if (seen.has(p.duckNo)) dup.push(p); else seen.set(p.duckNo, p); }
+    const max = all.reduce((m, p) => Math.max(m, p.duckNo || 0), 0);
+    let no = Math.max(max + 1, await nextDuckNoIn(s));
+    const movable = dup.filter((p) => p.status === STATUS.ELIGIBLE);
+    for (const p of movable) await reqP(s.participants.put({ ...p, duckNo: no++, updatedAt: new Date().toISOString() }));
+    if (movable.length) await reqP(s.settings.put({ key: 'duckSeq', value: no }));
+    return movable.length;
+  });
+}
+
 export async function deleteAllParticipants() {
   await tx(['participants', 'audit'], 'readwrite', async (s) => {
     const n = await reqP(s.participants.count());
@@ -449,12 +486,13 @@ export async function stats() {
 // ----------------------------------------------------------------------------- Sandaran
 
 const BACKUP_STORES = ['participants', 'prizes', 'draws', 'winners', 'audit', 'settings'];
+const LOCAL_ONLY = new Set(['auth', 'cloud', 'device']);
 
 export async function exportBackup() {
   const out = { app: 'lucky-duck-race', version: 1, exportedAt: new Date().toISOString(), data: {} };
   for (const n of BACKUP_STORES) {
     const rows = await getAll(n);
-    out.data[n] = n === 'settings' ? rows.filter((r) => r.key !== 'auth') : rows; // kata laluan TIDAK dieksport
+    out.data[n] = n === 'settings' ? rows.filter((r) => !LOCAL_ONLY.has(r.key)) : rows; // kata laluan & sesi awan TIDAK dieksport
   }
   return out;
 }
@@ -463,11 +501,11 @@ export async function importBackup(obj) {
   if (!obj || obj.app !== 'lucky-duck-race' || !obj.data) throw new Error('Fail sandaran tidak sah.');
   for (const n of BACKUP_STORES) if (!Array.isArray(obj.data[n] || [])) throw new Error('Fail sandaran rosak (' + n + ').');
   await tx(BACKUP_STORES, 'readwrite', async (s) => {
-    const auth = await reqP(s.settings.get('auth'));
+    const keep = (await Promise.all([...LOCAL_ONLY].map((k) => reqP(s.settings.get(k))))).filter(Boolean);
     for (const n of BACKUP_STORES) {
       await reqP(s[n].clear());
       for (const r of obj.data[n] || []) {
-        if (n === 'settings' && r.key === 'auth') continue;
+        if (n === 'settings' && LOCAL_ONLY.has(r.key)) continue;
         if (n === 'participants') {
           const e = validateStaffId(String(r.staffId || ''));
           if (e) throw new Error('Sandaran: ' + e + ' (' + r.staffId + ')');
@@ -475,7 +513,7 @@ export async function importBackup(obj) {
         await reqP(s[n].put(r));
       }
     }
-    if (auth) await reqP(s.settings.put(auth));
+    for (const r of keep) await reqP(s.settings.put(r));
     await reqP(s.audit.add(auditRec('SANDARAN_PULIH', 'Dipulihkan daripada sandaran ' + (obj.exportedAt || ''))));
   });
   settingsCache = null;

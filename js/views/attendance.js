@@ -1,6 +1,7 @@
 import { html, raw, mount, toast, errMsg, confirmDialog, debounce, fmtNum, fmtTime, $ } from '../util.js';
 import * as store from '../store.js';
 import * as att from '../attendance.js';
+import * as sync from '../sync.js';
 import { icon } from '../icons.js';
 
 const PAGE = 50;
@@ -50,7 +51,7 @@ export async function render(el, ctx) {
     <div class="danger-zone">
       <h4>Zon bahaya</h4>
       <button class="btn btn-danger btn-sm" id="a-wipe">🗑 Padam senarai staf dalam talian</button>
-      <button class="btn btn-danger btn-sm" id="a-disc">⏏ Putuskan sambungan majlis ini (mulakan majlis baharu)</button>
+      ${sync.isCloud() ? '' : html`<button class="btn btn-danger btn-sm" id="a-disc">⏏ Putuskan sambungan majlis ini (mulakan majlis baharu)</button>`}
     </div>`);
 
   const url = att.checkinUrl(cfg);
@@ -138,6 +139,7 @@ export async function render(el, ctx) {
         toast(b.dataset.in ? 'Kehadiran disahkan.' : 'Kehadiran dibatalkan.', 'success');
         return refresh();
       }
+      if (b.id === 'a-sync' && sync.isCloud() && !sync.isControl()) { await sync.tick(); toast('Data disegerak dengan awan. Peserta baharu dimasukkan oleh Peranti Kawalan (' + sync.controlName() + ').', 'success'); b.disabled = false; return refresh(); }
       if (b.id === 'a-sync') { const r = await att.syncNow(); toast('Kemas kini selesai: ' + r.added.length + ' peserta ditambah, ' + r.removed + ' dibuang.', 'success'); return refresh(); }
       if (b.id === 'a-copy') { await navigator.clipboard.writeText(url); return toast('Pautan disalin.', 'success'); }
       if (b.id === 'a-qr-full') return showQrFullscreen(cfg, url);
@@ -174,7 +176,7 @@ async function renderSetup(el, ctx) {
       <label class="field"><span>Nama majlis</span><input id="s-name" maxlength="160" value="${s.eventName || ''}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>
       <button class="btn btn-go btn-lg" id="s-create">Cipta majlis dalam talian</button>
       <p class="tiny muted">Sambungan internet diperlukan semasa pendaftaran. Perlumbaan dan cabutan tetap berjalan di komputer ini (boleh luar talian).
-        Kunci pentadbir majlis disimpan dalam komputer ini sahaja — sertakan dalam sandaran JSON jika mahu meneruskannya di komputer lain.</p>
+        Untuk guna majlis yang sama di pelayar / laptop lain, aktifkan <b>Penyegerakan awan</b> di <a href="#/settings">Tetapan Sistem</a>.</p>
     </section>`);
   $('#s-create').addEventListener('click', async (e) => {
     e.target.disabled = true;

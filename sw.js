@@ -1,7 +1,7 @@
 /* sw.js — DIJANA oleh tools/build-sw.mjs. Jangan sunting terus; sunting tools/sw.template.js.
  * Strategi: SEMUA aset aplikasi dicache semasa pemasangan → aplikasi berfungsi sepenuhnya LUAR TALIAN
  * selepas lawatan pertama (penting untuk dewan majlis tanpa WiFi stabil). Data (IndexedDB) tidak disentuh. */
-var CACHE = 'ldr-f385e15e6c01';
+var CACHE = 'ldr-212fa7ec0590';
 var ASSETS = [
   "./",
   "index.html",
@@ -29,6 +29,7 @@ var ASSETS = [
   "js/race3d.js",
   "js/rng.js",
   "js/store.js",
+  "js/sync.js",
   "js/theme.js",
   "js/util.js",
   "js/views/attendance.js",

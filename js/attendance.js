@@ -6,6 +6,7 @@
 import { rpc } from './cloud.js';
 import { randomHex } from './rng.js';
 import * as store from './store.js';
+import * as sync from './sync.js';
 
 const KEY = 'attendance';
 let timer = null;
@@ -112,6 +113,8 @@ export async function disconnect() {
 /** Ambil perubahan sejak penyegerakan terakhir → kemas kini peserta setempat. */
 export async function syncNow() {
   if (syncing) return { added: [], removed: 0 };
+  // Majlis awan: hanya Peranti Kawalan menukar kehadiran → peserta (peranti lain menerima melalui penyegerakan awan)
+  if (sync.isCloud() && !sync.isControl()) return { added: [], removed: 0 };
   const cfg = await getConfig();
   if (!cfg) return { added: [], removed: 0 };
   syncing = true;

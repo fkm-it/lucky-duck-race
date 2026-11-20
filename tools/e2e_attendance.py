@@ -224,4 +224,5 @@ async def main():
         print('Ralat konsol:\n  ' + '\n  '.join(bad[:20])); sys.exit(1)
     print('✔ E2E kehadiran lulus')
 
-asyncio.run(main())
+if __name__ == '__main__':
+    asyncio.run(main())

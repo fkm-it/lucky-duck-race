@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.0.0 — 2026-11-21 — Dalam talian + luar talian (penyegerakan awan)
+
+- **Majlis awan**: semua pelayar / laptop yang log masuk dengan **kod majlis + kata laluan** berkongsi data yang sama (peserta, hadiah, cabutan, pemenang, log, tetapan majlis).
+- **Luar talian**: IndexedDB kekal sebagai pangkalan data kerja; perubahan disimpan dalam `outbox` dan dihantar bila online semula.
+- **Peranti Kawalan**: satu per majlis — satu-satunya peranti yang boleh membuat cabutan, dan boleh bekerja tanpa internet. Peranti lain baca sahaja ketika luar talian; konflik diselesaikan dengan semakan revisi di pelayan.
+- Kehadiran QR → peserta kini dimasukkan oleh Peranti Kawalan sahaja (tiada nombor itik bertindih); nombor berganda dinomborkan semula secara automatik.
+- Tetapan bunyi / mod paparan / kualiti kini khusus untuk setiap peranti.
+- Migrasi `002_luckyduck_cloud_sync.sql` (jadual `docs`, `sessions`; RPC `ldr_cloud_*`).
+- Ujian: `tests/sync.test.mjs`, `tools/e2e_cloud.py` (dua pelayar + luar talian + ambil alih kawalan).
+
 ## 2.2.0 — 2026-11-20 — Muzik itik berlari
 
 - Muzik semasa perlumbaan kini fail `audio/itik-berlari.mp3` (gelung, fade masuk/keluar, dicache untuk offline). Muzik rock sintesis kekal sebagai sandaran jika fail gagal dimuat.
