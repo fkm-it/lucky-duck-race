@@ -51,27 +51,27 @@ export async function readSpreadsheet(file) {
 // ----------------------------------------------------------------------------- Eksport
 
 export const WINNER_COLUMNS = [
-  ['Draw ID', (w) => w.drawId],
-  ['Winner Number', (w) => w.winnerNo],
-  ['Duck Number', (w) => w.duckNo],
-  ['Participant Name', (w) => w.name],
-  ['Staff ID', (w) => w.staffId],
-  ['Department', (w) => w.department],
-  ['Prize Category', (w) => w.prizeCategory],
-  ['Prize Name', (w) => w.prizeName],
-  ['Prize Number', (w) => w.prizeNumber],
-  ['Draw Date', (w) => fmtDate(w.drawAt)],
-  ['Draw Time', (w) => fmtTime(w.drawAt)],
-  ['Status', (w) => (w.revoked ? 'Restored (eligibility returned)' : 'Winner')],
+  ['ID Cabutan', (w) => w.drawId],
+  ['No. Pemenang', (w) => w.winnerNo],
+  ['No. Itik', (w) => w.duckNo],
+  ['Nama Peserta', (w) => w.name],
+  ['No. Pekerja', (w) => w.staffId],
+  ['Jabatan', (w) => w.department],
+  ['Kategori Hadiah', (w) => w.prizeCategory],
+  ['Nama Hadiah', (w) => w.prizeName],
+  ['No. Hadiah', (w) => w.prizeNumber],
+  ['Tarikh Cabutan', (w) => fmtDate(w.drawAt)],
+  ['Masa Cabutan', (w) => fmtTime(w.drawAt)],
+  ['Status', (w) => (w.revoked ? 'Dipulihkan (layak semula)' : 'Pemenang')],
 ];
 
 export const PARTICIPANT_COLUMNS = [
-  ['Duck Number', (p) => p.duckNo],
-  ['Staff Name', (p) => p.name],
-  ['Staff ID', (p) => p.staffId],
-  ['Department', (p) => p.department],
-  ['Status', (p) => p.status],
-  ['Win Count', (p) => p.winCount || 0],
+  ['No. Itik', (p) => p.duckNo],
+  ['Nama Staf', (p) => p.name],
+  ['No. Pekerja', (p) => p.staffId],
+  ['Jabatan', (p) => p.department],
+  ['Status', (p) => (p.status === 'WINNER' ? 'Pemenang' : 'Layak')],
+  ['Bil. Kemenangan', (p) => p.winCount || 0],
 ];
 
 const stamp = () => new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
@@ -83,8 +83,8 @@ export async function exportXlsx(name, columns, rows, sheetName = 'Data') {
     return typeof v === 'number' ? v : safeCell(v);
   })));
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  // Staff ID sebagai TEKS (format '@') supaya sifar di hadapan kekal apabila dibuka
-  const sidCol = columns.findIndex((c) => c[0] === 'Staff ID');
+  // No. Pekerja sebagai TEKS (format '@') supaya sifar di hadapan kekal apabila dibuka
+  const sidCol = columns.findIndex((c) => c[0] === 'No. Pekerja');
   if (sidCol >= 0) {
     for (let r = 1; r < aoa.length; r++) {
       const ref = XLSX.utils.encode_cell({ r, c: sidCol });
@@ -117,14 +117,14 @@ export function printReport({ title, subtitle, columns, rows, footer = '' }) {
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 50);
 }
 
-/** Templat import untuk dimuat turun (Staff ID diformat Text). */
+/** Templat import untuk dimuat turun (No. Pekerja diformat sebagai Teks). */
 export async function downloadTemplate() {
   const XLSX = await loadXLSX();
-  const aoa = [['Staff Name', 'Staff ID', 'Department'], ['Ahmad bin Ali', '000123', 'Unit IT'], ['Siti Aminah', '000456', 'Kewangan']];
+  const aoa = [['Nama Staf', 'No. Pekerja', 'Jabatan'], ['Ahmad bin Ali', '000123', 'Unit IT'], ['Siti Aminah binti Yusof', '000456', 'Kewangan']];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   for (let r = 1; r < aoa.length; r++) { const ref = 'B' + (r + 1); ws[ref].t = 's'; ws[ref].z = '@'; }
   ws['!cols'] = [{ wch: 30 }, { wch: 14 }, { wch: 24 }];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Participants');
+  XLSX.utils.book_append_sheet(wb, ws, 'Senarai Staf');
   download('templat-peserta-lucky-duck.xlsx', new Blob([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })]));
 }

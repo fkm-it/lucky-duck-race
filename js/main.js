@@ -17,7 +17,7 @@ const ROUTES = [
   { id: 'participants', label: 'Peserta Cabutan', icon: 'users', title: 'Peserta Cabutan', nav: true, load: () => import('./views/participants.js') },
   { id: 'draw', label: 'Cabutan Bertuah', icon: 'trophy', title: 'Cabutan Bertuah', nav: true, load: () => import('./views/draw.js') },
   { id: 'history', label: 'Rekod Pemenang', icon: 'medal', title: 'Rekod Pemenang', nav: true, load: () => import('./views/history.js') },
-  { id: 'reports', label: 'Laporan & Export', icon: 'report', title: 'Laporan & Export', nav: true, load: () => import('./views/reports.js') },
+  { id: 'reports', label: 'Laporan & Eksport', icon: 'report', title: 'Laporan & Eksport', nav: true, load: () => import('./views/reports.js') },
   { id: 'settings', label: 'Tetapan Sistem', icon: 'settings', title: 'Tetapan Sistem', nav: true, load: () => import('./views/settings.js') },
   { id: 'import', label: 'Data Staf', icon: 'idcard', title: 'Data Staf', navAs: 'staff', load: () => import('./views/import.js') },
   { id: 'prizes', label: 'Hadiah', icon: 'gift', title: 'Urus Hadiah', navAs: 'draw', load: () => import('./views/prizes.js') },
@@ -50,7 +50,7 @@ async function showHome() {
   document.title = 'Lucky Duck Race — Sistem Pendaftaran Kehadiran & Cabutan Bertuah';
   const s = await store.getSettings();
   const tiles = [
-    ['dashboard', 'monitor', 'Dashboard Admin'], ['staff', 'idcard', 'Data Staf'], ['attendance', 'calcheck', 'Kehadiran'],
+    ['dashboard', 'monitor', 'Dashboard Pentadbir'], ['staff', 'idcard', 'Data Staf'], ['attendance', 'calcheck', 'Kehadiran'],
     ['participants', 'users', 'Peserta Cabutan'], ['history', 'trophy', 'Pemenang'], ['settings', 'settings', 'Tetapan'],
   ];
   mount(app, html`
@@ -67,7 +67,7 @@ async function showHome() {
       <div class="home-ctas">
         <button class="home-cta cta-blue" data-go="checkin">
           <span class="cta-ic">${icon('scan')}</span>
-          <span class="cta-t"><b>Pendaftaran Kehadiran Staf</b><small>(Scan QR Code)</small></span>
+          <span class="cta-t"><b>Pendaftaran Kehadiran Staf</b><small>(Imbas Kod QR)</small></span>
           <span class="cta-arr">${icon('arrow')}</span>
         </button>
         <button class="home-cta cta-gold" data-go="draw">
@@ -76,7 +76,7 @@ async function showHome() {
           <span class="cta-arr">${icon('arrow')}</span>
         </button>
       </div>
-      <nav class="home-nav" aria-label="Menu admin">
+      <nav class="home-nav" aria-label="Menu pentadbir">
         ${tiles.map(([r, ic, l]) => html`<button data-go="${r}">${icon(ic)}<span>${l}</span></button>`)}
       </nav>
     </div>`);
@@ -87,7 +87,7 @@ async function showHome() {
     if (r === 'checkin') {
       const cfg = await att.getConfig();
       if (cfg) { const { showQrFullscreen } = await import('./views/attendance.js'); return showQrFullscreen(cfg, att.checkinUrl(cfg)); }
-      toast('Pendaftaran kehadiran belum disediakan. Log masuk sebagai admin untuk menyediakannya.');
+      toast('Pendaftaran kehadiran belum disediakan. Sila log masuk sebagai pentadbir untuk menyediakannya.');
       return requireLogin('attendance');
     }
     requireLogin(r);
@@ -109,8 +109,8 @@ async function showAuth() {
       <form class="auth-card" id="auth-form" autocomplete="off">
         <img class="auth-logo" src="icons/logo.svg" alt="Lucky Duck Race">
         <img class="auth-mascot" src="icons/mascot.svg" alt="">
-        <h2>${first ? 'Sediakan akaun pentadbir' : 'Log masuk Admin Panel'}</h2>
-        <p class="muted">${first ? 'Tetapkan kata laluan pentadbir untuk komputer ini (min. 8 aksara, huruf & nombor).' : 'Masukkan kata laluan pentadbir.'}</p>
+        <h2>${first ? 'Sediakan akaun pentadbir' : 'Log Masuk Panel Pentadbir'}</h2>
+        <p class="muted">${first ? 'Tetapkan kata laluan pentadbir untuk komputer ini (sekurang-kurangnya 8 aksara, mengandungi huruf dan nombor).' : 'Masukkan kata laluan pentadbir.'}</p>
         <label class="field field-ic"><span>Kata laluan</span>${icon('lock')}<input type="password" id="pw1" required minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}"></label>
         ${first ? html`<label class="field field-ic"><span>Sahkan kata laluan</span>${icon('lock')}<input type="password" id="pw2" required minlength="8" autocomplete="new-password"></label>` : ''}
         <button class="btn btn-purple btn-lg btn-block" type="submit">${first ? 'Simpan & masuk' : 'Masuk'}</button>
@@ -147,7 +147,7 @@ function shell() {
   mount(app, html`
     <div class="shell">
       <aside class="side" id="side">
-        <a class="side-brand" href="#/home" title="Paparan Utama"><img src="icons/logo.svg" alt="Lucky Duck Race"><small>Admin Panel</small></a>
+        <a class="side-brand" href="#/home" title="Paparan Utama"><img src="icons/logo.svg" alt="Lucky Duck Race"><small>Panel Pentadbir</small></a>
         <nav class="side-nav" aria-label="Navigasi utama">
           ${ROUTES.filter((r) => r.nav).map((r) => html`<a href="#/${r.id}" data-r="${r.id}">${icon(r.icon)}<span>${r.label}</span></a>`)}
         </nav>

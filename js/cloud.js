@@ -13,7 +13,7 @@ const MESSAGES = {
   INVALID_QR: 'Kod QR tidak sah atau telah ditukar. Sila imbas semula kod QR terkini di kaunter pendaftaran.',
   CLOSED: 'Pendaftaran kehadiran telah ditutup. Sila rujuk kaunter pendaftaran.',
   RATE_LIMIT: 'Terlalu banyak cubaan. Sila tunggu 1 minit dan cuba lagi.',
-  FORBIDDEN: 'Kunci admin tidak sah untuk majlis ini.',
+  FORBIDDEN: 'Kunci pentadbir tidak sah untuk majlis ini.',
   WEAK_SECRET: 'Rahsia majlis tidak sah.',
   BAD_INPUT: 'Data tidak sah (maksimum 5,000 baris setiap muat naik).',
 };

@@ -12,21 +12,21 @@ export async function render(el, ctx) {
       <section class="card">
         <div class="card-head"><h3>Majlis & paparan</h3></div>
         <div class="form-grid">
-          <label class="field span-2"><span>Nama majlis (dipapar di pentas)</span><input id="s-event" maxlength="120" value="${s.eventName}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>
+          <label class="field span-2"><span>Nama majlis (dipaparkan di pentas)</span><input id="s-event" maxlength="120" value="${s.eventName}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>
           <label class="field"><span>Tarikh majlis</span><input id="s-date" type="date" value="${s.eventDate}"></label>
           <label class="field"><span>Lokasi</span><input id="s-loc" maxlength="120" value="${s.eventLocation}" placeholder="cth. Dewan Utama"></label>
           <label class="field span-2"><span>Subtajuk</span><input id="s-sub" maxlength="120" value="${s.subtitle}"></label>
           <label class="field"><span>Mod paparan</span><select id="s-mode">
-            <option value="auto" ${s.renderMode === 'auto' ? 'selected' : ''}>Auto (3D jika disokong)</option>
+            <option value="auto" ${s.renderMode === 'auto' ? 'selected' : ''}>Automatik (3D jika disokong)</option>
             <option value="3d" ${s.renderMode === '3d' ? 'selected' : ''}>3D</option>
-            <option value="2d" ${s.renderMode === '2d' ? 'selected' : ''}>2D (peranti lemah)</option></select></label>
+            <option value="2d" ${s.renderMode === '2d' ? 'selected' : ''}>2D (komputer berprestasi rendah)</option></select></label>
           <label class="field"><span>Kualiti grafik</span><select id="s-q">
-            <option value="high" ${s.quality === 'high' ? 'selected' : ''}>Tinggi (bayang, antialias)</option>
+            <option value="high" ${s.quality === 'high' ? 'selected' : ''}>Tinggi (bayang dan tepi licin)</option>
             <option value="low" ${s.quality === 'low' ? 'selected' : ''}>Rendah (laju)</option></select></label>
           <label class="field"><span>Tempoh perlumbaan (saat)</span><input id="s-dur" type="number" min="8" max="60" value="${s.raceDuration}"></label>
           <label class="field"><span>Mod pendedahan lalai</span><select id="s-rv">
             <option value="one" ${s.revealMode === 'one' ? 'selected' : ''}>Satu demi satu</option>
-            <option value="finale" ${s.revealMode === 'finale' ? 'selected' : ''}>Grand Finale</option></select></label>
+            <option value="finale" ${s.revealMode === 'finale' ? 'selected' : ''}>Grand Finale (serentak)</option></select></label>
           <label class="check span-2"><input type="checkbox" id="s-hl" ${s.highlightDuringRace ? 'checked' : ''}> Serlahkan itik pemenang SEMASA perlumbaan (lalai: hanya selepas melintas garisan — lebih suspens)</label>
           <label class="check span-2"><input type="checkbox" id="s-multi" ${s.allowMultipleWins ? 'checked' : ''}> Benarkan peserta menang lebih daripada sekali (lalai: TIDAK)</label>
         </div>
@@ -56,7 +56,7 @@ export async function render(el, ctx) {
         </div>
         <div class="danger-zone">
           <h4>Zon bahaya</h4>
-          <button class="btn btn-danger" id="s-reset">↺ Reset semua cabutan</button>
+          <button class="btn btn-danger" id="s-reset">↺ Set semula semua cabutan</button>
           <button class="btn btn-danger" id="s-wipe">🗑 Padam semua peserta</button>
         </div>
       </section>
@@ -109,9 +109,9 @@ export async function render(el, ctx) {
       store.audit('SANDARAN_EKSPORT', '');
     }
     if (b.id === 's-reset') {
-      const ok = await confirmDialog('Reset semua cabutan?', 'Semua rekod pemenang & cabutan akan DIKOSONGKAN dan semua peserta kembali LAYAK. Muat turun sandaran / eksport laporan dahulu jika perlu. Tindakan ini tidak boleh dibatalkan.', { danger: true, okLabel: 'Reset', typeToConfirm: 'RESET' });
+      const ok = await confirmDialog('Set semula semua cabutan?', 'Semua rekod pemenang & cabutan akan DIKOSONGKAN dan semua peserta kembali LAYAK. Muat turun sandaran / eksport laporan dahulu jika perlu. Tindakan ini tidak boleh dibatalkan.', { danger: true, okLabel: 'Set semula', typeToConfirm: 'SET SEMULA' });
       if (!ok) return;
-      await store.resetAllDraws(); toast('Cabutan direset.', 'success'); ctx.refreshStats();
+      await store.resetAllDraws(); toast('Semua cabutan telah ditetapkan semula.', 'success'); ctx.refreshStats();
     }
     if (b.id === 's-wipe') {
       const ok = await confirmDialog('Padam semua peserta?', 'Semua peserta akan dipadam. Sejarah pemenang dikekalkan.', { danger: true, okLabel: 'Padam semua', typeToConfirm: 'PADAM' });

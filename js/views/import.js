@@ -14,7 +14,7 @@ export async function render(el, ctx) {
   mount(el, html`
     ${attCfg ? html`<fieldset class="radio-cards import-target"><legend class="sr-only">Destinasi import</legend>
       <label class="rc"><input type="radio" name="tgt" value="attendance" ${st.target === 'attendance' ? 'checked' : ''}><b>📲 Senarai staf untuk pengesahan kehadiran (QR)</b><small>Dimuat naik ke pelayan majlis "${attCfg.eventName}". Staf masuk cabutan hanya selepas sahkan kehadiran.</small></label>
-      <label class="rc"><input type="radio" name="tgt" value="participants" ${st.target === 'participants' ? 'checked' : ''}><b>🦆 Terus sebagai peserta cabutan</b><small>Tanpa pengesahan kehadiran — semua dalam fail layak serta-merta.</small></label>
+      <label class="rc"><input type="radio" name="tgt" value="participants" ${st.target === 'participants' ? 'checked' : ''}><b>🦆 Terus sebagai peserta cabutan</b><small>Tanpa pengesahan kehadiran — semua staf dalam fail terus layak.</small></label>
     </fieldset>` : ''}
     <div class="steps">
       <span class="step on">1 Muat naik</span><span class="step" id="s2">2 Padankan lajur</span><span class="step" id="s3">3 Semak & sahkan</span>
@@ -24,11 +24,11 @@ export async function render(el, ctx) {
         <input type="file" id="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden>
         <div class="drop-ic">⇪</div>
         <b>Seret fail ke sini atau klik untuk memilih</b>
-        <span class="muted">Excel (.xlsx), Excel 97-2003 (.xls) atau CSV · Lajur: Staff Name, Staff ID, Department</span>
+        <span class="muted">Excel (.xlsx), Excel 97-2003 (.xls) atau CSV · Lajur: Nama Staf, No. Pekerja, Jabatan</span>
         <span class="muted tiny" id="fname"></span>
       </label>
       <div class="row-actions"><button class="btn btn-ghost btn-sm" id="tpl">⇩ Muat turun templat Excel</button>
-      <span class="tiny muted">Tip: format lajur Staff ID sebagai <b>Text</b> dalam Excel supaya sifar di hadapan (cth 000123) kekal.</span></div>
+      <span class="tiny muted">Petua: tetapkan format lajur No. Pekerja sebagai <b>Text</b> dalam Excel supaya sifar di hadapan (cth. 000123) dikekalkan.</span></div>
     </section>
     <section id="mapper"></section>
     <section id="preview"></section>`);
@@ -73,7 +73,7 @@ export async function render(el, ctx) {
       <div class="card-head"><h3>Padankan lajur</h3></div>
       <div class="form-grid">
         ${st.sheets.length > 1 ? html`<label class="field"><span>Helaian</span><select id="sheet">${st.sheets.map((s, i) => html`<option value="${i}" ${i === st.sheet ? 'selected' : ''}>${s.name} (${s.rows.length})</option>`)}</select></label>` : ''}
-        ${sel('name', 'Staff Name', true)}${sel('staffId', 'Staff ID', true)}${sel('department', 'Department', false)}
+        ${sel('name', 'Nama Staf', true)}${sel('staffId', 'No. Pekerja', true)}${sel('department', 'Jabatan', false)}
         <label class="check"><input type="checkbox" id="hdr" ${st.header ? 'checked' : ''}> Baris pertama ialah tajuk</label>
       </div></div>`);
     $('#s2').classList.add('on');
@@ -82,7 +82,7 @@ export async function render(el, ctx) {
   async function validate() {
     const rows = st.sheets[st.sheet].rows.slice(st.header ? 1 : 0);
     if (st.map.name < 0 || st.map.staffId < 0) {
-      mount($('#preview'), html`<div class="card"><p class="muted">Pilih lajur <b>Staff Name</b> dan <b>Staff ID</b> untuk meneruskan.</p></div>`);
+      mount($('#preview'), html`<div class="card"><p class="muted">Pilih lajur <b>Nama Staf</b> dan <b>No. Pekerja</b> untuk meneruskan.</p></div>`);
       return;
     }
     st.result = validateRows(rows, st.map, st.target === 'attendance' ? new Set() : await store.existingIds());
@@ -103,14 +103,14 @@ export async function render(el, ctx) {
         <button class="chip chip-info ${st.filter === 'exists' ? 'on' : ''}" data-flt="exists">Sudah wujud ${summary.exists}</button>
       </div>
       <div class="table-wrap tall"><table class="tbl tbl-sm">
-        <thead><tr><th>Baris</th><th>Nama</th><th>Staff ID</th><th>Jabatan</th><th>Status</th><th>Catatan</th></tr></thead>
+        <thead><tr><th>Baris</th><th>Nama</th><th>No. Pekerja</th><th>Jabatan</th><th>Status</th><th>Catatan</th></tr></thead>
         <tbody>${list.slice(0, 500).map((x) => html`<tr class="${x.status === 'error' ? 'row-err' : x.status === 'dupFile' ? 'row-warn' : ''}">
           <td class="mono">${x.row}</td><td>${x.name}</td><td class="mono">${x.staffId}</td><td>${x.department}</td>
           <td><span class="tag ${STATUS_LABEL[x.status][1]}">${STATUS_LABEL[x.status][0]}</span></td><td class="tiny">${x.message}</td></tr>`)}</tbody>
       </table></div>
       ${list.length > 500 ? html`<p class="tiny muted">Memaparkan 500 pertama daripada ${fmtNum(list.length)}.</p>` : ''}
       <div class="import-foot">
-        ${summary.exists ? html`<label class="field inline"><span>Staff ID sedia ada:</span><select id="mode"><option value="skip">Langkau (kekalkan data semasa)</option><option value="update">Kemas kini nama & jabatan</option></select></label>` : ''}
+        ${summary.exists ? html`<label class="field inline"><span>No. Pekerja sedia ada:</span><select id="mode"><option value="skip">Langkau (kekalkan data semasa)</option><option value="update">Kemas kini nama & jabatan</option></select></label>` : ''}
         <div class="spacer"></div>
         <span class="muted">${summary.error + summary.dupFile ? fmtNum(summary.error + summary.dupFile) + ' baris tidak sah akan diabaikan' : 'Semua baris sah'}</span>
         <button class="btn btn-primary" id="do-import" ${importable ? '' : 'disabled'}>${st.target === 'attendance' ? html`Muat naik ${fmtNum(summary.ok)} staf ke pelayan kehadiran` : html`Sahkan import (${fmtNum(summary.ok)} baharu)`}</button>

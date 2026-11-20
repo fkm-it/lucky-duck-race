@@ -12,7 +12,7 @@ export async function render(el, ctx) {
 
   mount(el, html`
     <div class="toolbar">
-      <input type="search" id="p-q" placeholder="Cari nama atau Staff ID…" aria-label="Cari">
+      <input type="search" id="p-q" placeholder="Cari nama atau No. Pekerja…" aria-label="Cari">
       <select id="p-dept" aria-label="Jabatan"></select>
       <select id="p-status" aria-label="Status">
         <option value="">Semua peserta</option><option value="ELIGIBLE">Layak sahaja</option><option value="WINNER">Pemenang sahaja</option>
@@ -45,7 +45,7 @@ export async function render(el, ctx) {
     state.page = Math.min(state.page, pages - 1);
     const slice = rows.slice(state.page * PAGE, state.page * PAGE + PAGE);
     mount($('#p-tbl'), html`
-      <thead><tr><th class="w-chk"><input type="checkbox" id="p-all" aria-label="Pilih semua"></th><th>Itik</th><th>Nama</th><th>Staff ID</th><th>Jabatan</th><th>Status</th><th class="w-act"></th></tr></thead>
+      <thead><tr><th class="w-chk"><input type="checkbox" id="p-all" aria-label="Pilih semua"></th><th>Itik</th><th>Nama</th><th>No. Pekerja</th><th>Jabatan</th><th>Status</th><th class="w-act"></th></tr></thead>
       <tbody>${slice.length ? slice.map((p) => html`<tr>
         <td><input type="checkbox" data-sel="${p.staffId}" ${state.sel.has(p.staffId) ? 'checked' : ''} aria-label="Pilih"></td>
         <td class="mono">#${p.duckNo}</td><td><b>${p.name}</b></td><td class="mono">${p.staffId}</td><td>${p.department || html`<span class="muted">—</span>`}</td>
@@ -108,7 +108,7 @@ export async function render(el, ctx) {
       $('#p-exp-menu').hidden = true;
       const rows = filtered();
       try {
-        if (t.dataset.f === 'xlsx') await exportXlsx('peserta', PARTICIPANT_COLUMNS, rows, 'Participants');
+        if (t.dataset.f === 'xlsx') await exportXlsx('peserta', PARTICIPANT_COLUMNS, rows, 'Peserta');
         else exportCsv('peserta', PARTICIPANT_COLUMNS, rows);
         store.audit('EKSPORT_PESERTA', t.dataset.f + ' (' + rows.length + ')');
       } catch (err) { toast(errMsg(err), 'error'); }

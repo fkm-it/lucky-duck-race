@@ -99,7 +99,7 @@ export async function addParticipant(p) {
   const now = new Date().toISOString();
   await tx(['participants', 'settings', 'audit'], 'readwrite', async (s) => {
     const exists = await reqP(s.participants.get(clean.staffId));
-    if (exists) throw new Error('Staff ID ' + clean.staffId + ' sudah wujud.');
+    if (exists) throw new Error('No. Pekerja ' + clean.staffId + ' sudah wujud.');
     const no = await nextDuckNoIn(s);
     await reqP(s.participants.add({ ...clean, duckNo: no, status: STATUS.ELIGIBLE, winCount: 0, createdAt: now, updatedAt: now }));
     await reqP(s.settings.put({ key: 'duckSeq', value: no + 1 }));
@@ -114,7 +114,7 @@ export async function updateParticipant(originalId, p) {
     if (!cur) throw new Error('Peserta tidak dijumpai.');
     if (clean.staffId !== originalId) {
       const clash = await reqP(s.participants.get(clean.staffId));
-      if (clash) throw new Error('Staff ID ' + clean.staffId + ' sudah digunakan.');
+      if (clash) throw new Error('No. Pekerja ' + clean.staffId + ' sudah digunakan.');
       await reqP(s.participants.delete(originalId));
     }
     await reqP(s.participants.put({ ...cur, ...clean, updatedAt: new Date().toISOString() }));
@@ -211,7 +211,7 @@ export const listPrizes = async () => (await getAll('prizes')).sort((a, b) => (a
 export async function savePrize(p) {
   const rec = {
     id: p.id || 'PRZ-' + randomHex(4).toUpperCase(),
-    category: cleanText(p.category, 60) || 'Special Prize',
+    category: cleanText(p.category, 60) || 'Hadiah Istimewa',
     name: cleanText(p.name, 120),
     description: cleanText(p.description, 500),
     quantity: Math.max(1, Math.min(10000, parseInt(p.quantity, 10) || 1)),
@@ -230,7 +230,7 @@ export async function savePrize(p) {
 
 export async function deletePrize(id) {
   const winners = await getAll('winners', 'prizeId', id);
-  if (winners.some((w) => !w.revoked)) throw new Error('Hadiah ini sudah mempunyai pemenang. Pulihkan pemenang dahulu atau reset cabutan.');
+  if (winners.some((w) => !w.revoked)) throw new Error('Hadiah ini sudah mempunyai pemenang. Pulihkan pemenang dahulu atau set semula cabutan.');
   await tx(['prizes', 'audit'], 'readwrite', async (s) => {
     await reqP(s.prizes.delete(id));
     await reqP(s.audit.add(auditRec('HADIAH_PADAM', id)));

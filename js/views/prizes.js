@@ -1,9 +1,9 @@
 import { html, mount, toast, errMsg, modal, confirmDialog, resizeImage, fmtNum, $ } from '../util.js';
 import * as store from '../store.js';
-import { PRIZE_CATEGORIES } from '../logic.js';
+import { PRIZE_CATEGORIES, LEGACY_CATEGORY } from '../logic.js';
 
 const PRESETS = [
-  ['Grand Prize', 1, 1], ['First Prize', 2, 2], ['Second Prize', 3, 3], ['Third Prize', 5, 4], ['Consolation Prize', 20, 5],
+  ['Hadiah Utama', 1, 1], ['Hadiah Pertama', 2, 2], ['Hadiah Kedua', 3, 3], ['Hadiah Ketiga', 5, 4], ['Hadiah Sagu Hati', 20, 5],
 ];
 
 export async function render(el, ctx) {
@@ -34,7 +34,7 @@ export async function render(el, ctx) {
             <button class="btn btn-ghost btn-sm" data-edit="${p.id}">Sunting</button>
             <button class="icon-btn danger" data-del="${p.id}" title="Padam">🗑</button>
           </div>
-        </article>`)}</div>` : html`<div class="empty"><div class="empty-ic">🎁</div><h3>Belum ada hadiah</h3><p class="muted">Tambah kategori hadiah (Grand, First, Second, Third, Consolation, Special) beserta bilangan pemenang.</p></div>`}`);
+        </article>`)}</div>` : html`<div class="empty"><div class="empty-ic">🎁</div><h3>Belum ada hadiah</h3><p class="muted">Tambah kategori hadiah (Utama, Pertama, Kedua, Ketiga, Sagu Hati, Istimewa) beserta bilangan pemenang.</p></div>`}`);
     return ps;
   };
 
@@ -44,7 +44,7 @@ export async function render(el, ctx) {
     let image = p ? p.image : '';
     const body = html`
       <div class="form-grid">
-        <label class="field"><span>Kategori *</span><select id="z-cat">${PRIZE_CATEGORIES.map((c) => html`<option ${p && p.category === c ? 'selected' : ''}>${c}</option>`)}</select></label>
+        <label class="field"><span>Kategori *</span><select id="z-cat">${PRIZE_CATEGORIES.map((c) => html`<option ${p && (LEGACY_CATEGORY[p.category] || p.category) === c ? 'selected' : ''}>${c}</option>`)}</select></label>
         <label class="field"><span>Turutan cabutan *</span><input id="z-seq" type="number" min="1" max="999" value="${p ? p.sequence : ps.length + 1}"></label>
         <label class="field span-2"><span>Nama hadiah *</span><input id="z-name" maxlength="120" value="${p ? p.name : ''}" placeholder="cth. Smart TV 55 inci"></label>
         <label class="field"><span>Bilangan pemenang *</span><input id="z-qty" type="number" min="1" max="10000" value="${p ? p.quantity : 1}"></label>

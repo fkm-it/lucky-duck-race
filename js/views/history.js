@@ -14,10 +14,10 @@ export async function render(el, ctx) {
       <button class="tab" data-tab="draws" role="tab">Rekod cabutan</button>
     </div>
     <div class="toolbar">
-      <input type="search" id="h-q" placeholder="Cari nama / Staff ID…" aria-label="Cari">
+      <input type="search" id="h-q" placeholder="Cari nama / No. Pekerja…" aria-label="Cari">
       <select id="h-prize" aria-label="Hadiah"></select>
       <select id="h-draw" aria-label="Cabutan"></select>
-      <label class="check"><input type="checkbox" id="h-rev" checked> Papar yang dipulihkan</label>
+      <label class="check"><input type="checkbox" id="h-rev" checked> Paparkan rekod yang dipulihkan</label>
       <div class="spacer"></div>
       <button class="btn btn-ghost" data-exp="xlsx">⇩ Excel</button>
       <button class="btn btn-ghost" data-exp="csv">⇩ CSV</button>
@@ -40,7 +40,7 @@ export async function render(el, ctx) {
   const drawBody = () => {
     if (st.tab === 'draws') {
       mount($('#h-body'), html`<div class="card card-flush"><div class="table-wrap"><table class="tbl">
-        <thead><tr><th>Draw ID</th><th>Tarikh & masa</th><th>Hadiah</th><th>Pemenang</th><th>Layak</th><th>Mod</th><th>Status</th><th>Kod integriti (SHA-256)</th><th></th></tr></thead>
+        <thead><tr><th>ID Cabutan</th><th>Tarikh & masa</th><th>Hadiah</th><th>Pemenang</th><th>Layak</th><th>Mod</th><th>Status</th><th>Kod integriti (SHA-256)</th><th></th></tr></thead>
         <tbody>${draws.length ? [...draws].reverse().map((d) => html`<tr>
           <td class="mono">${d.id}</td><td>${fmtDate(d.createdAt)}<br><small class="muted">${fmtTime(d.createdAt)}</small></td>
           <td><b>${d.prizeCategory}</b><br><small>${d.prizeName}</small></td><td>${d.count}</td><td>${fmtNum(d.poolSize)}</td>
@@ -48,12 +48,12 @@ export async function render(el, ctx) {
           <td>${d.status === 'REVEALED' ? html`<span class="tag tag-ok">Didedahkan</span>` : html`<span class="tag tag-warn">Disimpan</span>`}</td>
           <td class="mono tiny wrap">${d.integrity}</td>
           <td><button class="btn btn-ghost btn-sm" data-replay="${d.id}">▶ Main semula</button></td></tr>`) : html`<tr><td colspan="9" class="empty-cell">Belum ada cabutan.</td></tr>`}</tbody></table></div></div>
-        <p class="tiny muted">Kod integriti = SHA-256(Draw ID | garam | senarai Staff ID layak | senarai Staff ID pemenang). Ia membuktikan senarai pemenang tidak diubah selepas cabutan.</p>`);
+        <p class="tiny muted">Kod integriti = SHA-256(ID Cabutan | garam | senarai No. Pekerja yang layak | senarai No. Pekerja pemenang). Kod ini membuktikan senarai pemenang tidak diubah selepas cabutan.</p>`);
       return;
     }
     const rows = filtered();
     mount($('#h-body'), html`<div class="card card-flush"><div class="table-wrap"><table class="tbl">
-      <thead><tr><th>No.</th><th>Nama</th><th>Staff ID</th><th>Jabatan</th><th>Hadiah</th><th>Itik</th><th>Tarikh / masa</th><th>Draw ID</th><th></th></tr></thead>
+      <thead><tr><th>No.</th><th>Nama</th><th>No. Pekerja</th><th>Jabatan</th><th>Hadiah</th><th>Itik</th><th>Tarikh / masa</th><th>ID Cabutan</th><th></th></tr></thead>
       <tbody>${rows.length ? rows.map((w) => html`<tr class="${w.revoked ? 'row-dim' : ''}">
         <td class="mono"><b>#${w.winnerNo}</b></td><td><b>${w.name}</b></td><td class="mono">${w.staffId}</td><td>${w.department || '—'}</td>
         <td><span class="tag tag-gold">${w.prizeCategory} #${w.prizeNumber}</span><br><small>${w.prizeName}</small></td>
@@ -83,13 +83,13 @@ export async function render(el, ctx) {
     if (b.dataset.exp) {
       const rows = filtered();
       try {
-        if (b.dataset.exp === 'xlsx') await exportXlsx('pemenang', WINNER_COLUMNS, rows, 'Winners');
+        if (b.dataset.exp === 'xlsx') await exportXlsx('pemenang', WINNER_COLUMNS, rows, 'Pemenang');
         else if (b.dataset.exp === 'csv') exportCsv('pemenang', WINNER_COLUMNS, rows);
         else {
           const s = await store.getSettings();
           printReport({
             title: 'LUCKY DUCK RACE — Laporan Pemenang', subtitle: (s.eventName ? s.eventName + ' · ' : '') + 'Dijana ' + new Date().toLocaleString('ms-MY'),
-            columns: WINNER_COLUMNS.filter((c) => !['Duck Number'].includes(c[0])), rows,
+            columns: WINNER_COLUMNS.filter((c) => c[0] !== 'No. Itik'), rows,
             footer: rows.length + ' rekod · ' + draws.length + ' cabutan · Pemilihan rawak kriptografi (Web Crypto API).',
           });
         }

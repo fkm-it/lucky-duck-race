@@ -1,6 +1,6 @@
 {
   "name": "lucky-duck-race",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Lucky Duck Race \u2014 3D lucky draw (PWA, offline, IndexedDB)",
   "scripts": {
     "test": "node --test tests/*.test.mjs",

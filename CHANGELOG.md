@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 — 2026-11-20
+- Semakan bahasa: istilah & ayat Bahasa Melayu Malaysia di seluruh sistem (No. Pekerja, Panel Pentadbir, Laporan & Eksport, Imbas Kod QR, Set semula, komputer).
+- Kategori hadiah dalam BM: Hadiah Utama / Pertama / Kedua / Ketiga / Sagu Hati / Istimewa (kategori lama dipetakan automatik).
+- Tajuk lajur eksport Excel/CSV/PDF & templat import dalam BM; import menerima tajuk BM atau Inggeris.
+- "Segerak sekarang" → "Kemas kini sekarang"; butang Batal → Cancel.
+
 ## 1.2.0 — 2026-11-20
 - Antara muka baharu ikut mockup: tema ungu/emas, maskot itik bergoggle, logo LUCKY DUCK RACE.
 - **Paparan Utama** awam: butang Pendaftaran Kehadiran Staf (papar QR) & Cabutan Bertuah, menu ikon admin.

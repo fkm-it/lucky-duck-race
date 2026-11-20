@@ -17,9 +17,9 @@ export async function render(el, ctx) {
         <div class="stat-grid stat-grid-4" id="a-stats"></div>
         <div class="row-actions">
           <label class="switch"><input type="checkbox" id="a-open"><span></span> <em id="a-open-l">Pendaftaran dibuka</em></label>
-          <label class="switch"><input type="checkbox" id="a-auto" ${cfg.autoSync ? 'checked' : ''}><span></span> <em>Auto-masuk ke peserta cabutan</em></label>
+          <label class="switch"><input type="checkbox" id="a-auto" ${cfg.autoSync ? 'checked' : ''}><span></span> <em>Masukkan terus ke senarai peserta cabutan</em></label>
           <div class="spacer"></div>
-          <button class="btn btn-ghost btn-sm" id="a-sync">⟳ Segerak sekarang</button>
+          <button class="btn btn-ghost btn-sm" id="a-sync">⟳ Kemas kini sekarang</button>
         </div>
         <p class="tiny muted" id="a-sync-info"></p>
       </section>
@@ -50,7 +50,7 @@ export async function render(el, ctx) {
     <div class="danger-zone">
       <h4>Zon bahaya</h4>
       <button class="btn btn-danger btn-sm" id="a-wipe">🗑 Padam senarai staf dalam talian</button>
-      <button class="btn btn-danger btn-sm" id="a-disc">⏏ Putuskan majlis ini (mula majlis baharu)</button>
+      <button class="btn btn-danger btn-sm" id="a-disc">⏏ Putuskan sambungan majlis ini (mulakan majlis baharu)</button>
     </div>`);
 
   const url = att.checkinUrl(cfg);
@@ -71,7 +71,7 @@ export async function render(el, ctx) {
     $('#a-open-l').textContent = open ? 'Pendaftaran dibuka' : 'Pendaftaran ditutup';
     mount($('#a-pill'), st.err ? html`<span class="tag tag-err">● Luar talian</span>` : open ? html`<span class="tag tag-ok">● Dibuka</span>` : html`<span class="tag tag-warn">● Ditutup</span>`);
     const s = att.state;
-    $('#a-sync-info').textContent = st.err ? 'Ralat: ' + st.err : (s.lastSync ? 'Segerak terakhir ' + fmtTime(s.lastSync.toISOString()) + ' · dikemas kini setiap 5 saat' : '');
+    $('#a-sync-info').textContent = st.err ? 'Ralat: ' + st.err : (s.lastSync ? 'Kali terakhir dikemas kini ' + fmtTime(s.lastSync.toISOString()) + ' · dikemas kini secara automatik setiap 5 saat' : '');
   };
 
   const filtered = () => {
@@ -122,7 +122,7 @@ export async function render(el, ctx) {
       try { await att.setOpen(e.target.checked); toast(e.target.checked ? 'Pendaftaran dibuka.' : 'Pendaftaran ditutup.', 'success'); } catch (err) { toast(errMsg(err), 'error'); }
       refresh();
     }
-    if (e.target.id === 'a-auto') { await att.setAutoSync(e.target.checked); toast(e.target.checked ? 'Auto-masuk peserta dihidupkan.' : 'Auto-masuk peserta dimatikan.'); }
+    if (e.target.id === 'a-auto') { await att.setAutoSync(e.target.checked); toast(e.target.checked ? 'Staf yang hadir akan dimasukkan terus sebagai peserta cabutan.' : 'Staf yang hadir TIDAK lagi dimasukkan secara automatik sebagai peserta.'); }
   });
   el.addEventListener('click', async (e) => {
     const b = e.target.closest('button');
@@ -138,20 +138,20 @@ export async function render(el, ctx) {
         toast(b.dataset.in ? 'Kehadiran disahkan.' : 'Kehadiran dibatalkan.', 'success');
         return refresh();
       }
-      if (b.id === 'a-sync') { const r = await att.syncNow(); toast('Segerak selesai: ' + r.added.length + ' ditambah, ' + r.removed + ' dibuang.', 'success'); return refresh(); }
+      if (b.id === 'a-sync') { const r = await att.syncNow(); toast('Kemas kini selesai: ' + r.added.length + ' peserta ditambah, ' + r.removed + ' dibuang.', 'success'); return refresh(); }
       if (b.id === 'a-copy') { await navigator.clipboard.writeText(url); return toast('Pautan disalin.', 'success'); }
       if (b.id === 'a-qr-full') return showQrFullscreen(cfg, url);
       if (b.id === 'a-qr-print') return printQr(cfg, url);
       if (b.id === 'a-rotate') {
-        if (!(await confirmDialog('Tukar kod QR?', 'Kod QR lama (termasuk yang telah dicetak / dikongsi) TIDAK lagi sah. Gunakan jika QR tersebar di luar majlis.', { danger: true, okLabel: 'Tukar' }))) return;
+        if (!(await confirmDialog('Tukar kod QR?', 'Kod QR lama (termasuk yang telah dicetak / dikongsi) TIDAK lagi sah. Gunakan jika kod QR tersebar di luar majlis.', { danger: true, okLabel: 'Tukar' }))) return;
         await att.rotateToken(); toast('Kod QR baharu dijana.', 'success'); clearInterval(timer); return ctx.reload();
       }
       if (b.id === 'a-wipe') {
-        if (!(await confirmDialog('Padam senarai staf dalam talian?', 'Semua staf & rekod kehadiran majlis ini di pelayan akan dipadam. Peserta cabutan di laptop ini TIDAK terjejas.', { danger: true, okLabel: 'Padam', typeToConfirm: 'PADAM' }))) return;
+        if (!(await confirmDialog('Padam senarai staf dalam talian?', 'Semua staf & rekod kehadiran majlis ini di pelayan akan dipadam. Peserta cabutan di komputer ini TIDAK terjejas.', { danger: true, okLabel: 'Padam', typeToConfirm: 'PADAM' }))) return;
         await att.deleteAllStaff(); toast('Senarai staf dipadam.', 'success'); return refresh();
       }
       if (b.id === 'a-disc') {
-        if (!(await confirmDialog('Putuskan majlis ini?', 'Laptop ini tidak lagi menyegerak kehadiran majlis "' + cfg.eventName + '". Data di pelayan kekal. Anda boleh cipta majlis baharu selepas ini.', { danger: true, okLabel: 'Putuskan', typeToConfirm: 'PUTUS' }))) return;
+        if (!(await confirmDialog('Putuskan sambungan majlis ini?', 'Komputer ini tidak lagi menerima data kehadiran majlis "' + cfg.eventName + '". Data di pelayan kekal. Anda boleh mencipta majlis baharu selepas ini.', { danger: true, okLabel: 'Putuskan', typeToConfirm: 'PUTUS' }))) return;
         clearInterval(timer);
         await att.disconnect(); toast('Sambungan majlis diputuskan.'); return ctx.go('dashboard');
       }
@@ -169,12 +169,12 @@ async function renderSetup(el, ctx) {
         <li>Muat naik <b>senarai semua staf</b> (No. Pekerja, Nama, Jabatan) ke pelayan kehadiran.</li>
         <li>Paparkan / cetak <b>kod QR</b> di meja pendaftaran.</li>
         <li>Staf imbas QR dengan telefon → masukkan <b>No. Pekerja</b> → maklumat dipaparkan → tekan <b>Sahkan Kehadiran</b>.</li>
-        <li>Laptop ini menyegerak setiap 5 saat: staf yang hadir <b>automatik masuk sebagai peserta cabutan</b> (dengan nombor itik).</li>
+        <li>Komputer ini mengemas kini senarai setiap 5 saat: staf yang hadir <b>dimasukkan secara automatik sebagai peserta cabutan</b> (beserta nombor itik).</li>
       </ol>
       <label class="field"><span>Nama majlis</span><input id="s-name" maxlength="160" value="${s.eventName || ''}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>
       <button class="btn btn-go btn-lg" id="s-create">Cipta majlis dalam talian</button>
-      <p class="tiny muted">Memerlukan internet semasa pendaftaran. Perlumbaan & cabutan tetap berjalan di laptop ini (boleh luar talian).
-        Kunci admin majlis disimpan dalam laptop ini sahaja — sertakan dalam sandaran JSON jika mahu teruskan di laptop lain.</p>
+      <p class="tiny muted">Sambungan internet diperlukan semasa pendaftaran. Perlumbaan dan cabutan tetap berjalan di komputer ini (boleh luar talian).
+        Kunci pentadbir majlis disimpan dalam komputer ini sahaja — sertakan dalam sandaran JSON jika mahu meneruskannya di komputer lain.</p>
     </section>`);
   $('#s-create').addEventListener('click', async (e) => {
     e.target.disabled = true;
@@ -197,7 +197,7 @@ export function showQrFullscreen(cfg, url) {
         <div class="sd-head">Pendaftaran Kehadiran Staf</div>
         <div class="sd-event">${cfg.eventName}</div>
         <div class="sd-code">${raw(svg)}</div>
-        <div class="sd-cta">Sila imbas QR Code ini<br>untuk sahkan kehadiran</div>
+        <div class="sd-cta">Sila imbas kod QR ini<br>untuk mengesahkan kehadiran</div>
         <div class="sd-count" id="qf-count"></div>
         <div class="sd-check" aria-hidden="true"></div>
         <img class="sd-mascot" src="icons/mascot.svg" alt="">
@@ -234,7 +234,7 @@ async function printQr(cfg, url) {
     <div class="sd-head">Pendaftaran Kehadiran Staf</div>
     <div class="sd-event">${cfg.eventName}</div>
     <div class="sd-code">${raw(svg)}</div>
-    <div class="sd-cta">Sila imbas QR Code ini<br>untuk sahkan kehadiran</div>
+    <div class="sd-cta">Sila imbas kod QR ini<br>untuk mengesahkan kehadiran</div>
     <ol class="qp-steps"><li>Imbas kod QR dengan kamera telefon</li><li>Masukkan No. Pekerja</li><li>Semak maklumat &amp; tekan <b>Sahkan Kehadiran</b></li></ol>
     <div class="sd-check" aria-hidden="true"></div>
     <img class="sd-mascot" src="icons/mascot.svg" alt="">

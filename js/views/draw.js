@@ -32,7 +32,7 @@ export async function render(el, ctx) {
           <div class="field"><span>Peserta layak</span><div class="big-num">${fmtNum(pool.length)} 🦆</div></div>
           <fieldset class="field span-2 radio-cards"><legend>Mod pendedahan pemenang</legend>
             <label class="rc"><input type="radio" name="rv" value="one" ${st.reveal === 'one' ? 'checked' : ''}><b>A · Satu demi satu</b><small>Setiap pemenang diumumkan dengan jeda dramatik.</small></label>
-            <label class="rc"><input type="radio" name="rv" value="finale" ${st.reveal === 'finale' ? 'checked' : ''}><b>B · Grand Finale</b><small>Semua pemenang didedahkan serentak selepas perlumbaan.</small></label>
+            <label class="rc"><input type="radio" name="rv" value="finale" ${st.reveal === 'finale' ? 'checked' : ''}><b>B · Grand Finale (serentak)</b><small>Semua pemenang didedahkan serentak selepas perlumbaan.</small></label>
           </fieldset>
         </div>
         <div id="d-warn"></div>

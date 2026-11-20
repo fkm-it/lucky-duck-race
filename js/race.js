@@ -44,7 +44,7 @@ export async function openStage(o) {
   const root = document.getElementById('stage');
   const replay = o.replay || null;
   const prizeLabel = replay ? replay.draw.prizeName : (o.prize ? o.prize.name : 'Cabutan Khas');
-  const prizeCat = replay ? replay.draw.prizeCategory : (o.prize ? o.prize.category : 'Special Draw');
+  const prizeCat = replay ? replay.draw.prizeCategory : (o.prize ? o.prize.category : 'Cabutan Khas');
   const count = replay ? replay.winners.length : o.count;
   let pool = replay ? replay.pool : o.pool;
   const revealMode = (replay ? replay.draw.revealMode : o.revealMode) || 'one';

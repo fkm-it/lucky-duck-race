@@ -5,11 +5,11 @@ import * as att from '../attendance.js';
 import { exportXlsx, exportCsv, printReport, WINNER_COLUMNS, PARTICIPANT_COLUMNS } from '../io.js';
 
 const ATT_COLUMNS = [
-  ['Staff ID', (r) => r.staff_id], ['Staff Name', (r) => r.name], ['Department', (r) => r.department],
+  ['No. Pekerja', (r) => r.staff_id], ['Nama Staf', (r) => r.name], ['Jabatan', (r) => r.department],
   ['Status', (r) => (r.checked_in_at ? 'Hadir' : 'Belum hadir')],
-  ['Check-in Date', (r) => (r.checked_in_at ? fmtDate(r.checked_in_at) : '')],
-  ['Check-in Time', (r) => (r.checked_in_at ? fmtTime(r.checked_in_at) : '')],
-  ['Method', (r) => (r.checked_in_via === 'manual' ? 'Manual (kaunter)' : r.checked_in_via === 'qr' ? 'QR' : '')],
+  ['Tarikh Hadir', (r) => (r.checked_in_at ? fmtDate(r.checked_in_at) : '')],
+  ['Masa Hadir', (r) => (r.checked_in_at ? fmtTime(r.checked_in_at) : '')],
+  ['Kaedah', (r) => (r.checked_in_via === 'manual' ? 'Manual (kaunter)' : r.checked_in_via === 'qr' ? 'Kod QR' : '')],
 ];
 
 export async function render(el) {
@@ -22,15 +22,15 @@ export async function render(el) {
     </article>`;
   mount(el, html`
     <div class="rep-grid">
-      ${card('win', 'medal', 'Laporan Pemenang', 'Draw ID, no. pemenang, nama, Staff ID, jabatan, kategori & hadiah, tarikh dan masa.', s.winners + ' pemenang aktif',
+      ${card('win', 'medal', 'Laporan Pemenang', 'ID cabutan, no. pemenang, nama, No. Pekerja, jabatan, kategori dan hadiah, tarikh serta masa.', s.winners + ' pemenang aktif',
         [['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF']])}
-      ${card('part', 'users', 'Senarai Peserta Cabutan', 'Semua peserta dengan nombor itik dan status (layak / pemenang).', s.total + ' peserta',
+      ${card('part', 'users', 'Senarai Peserta Cabutan', 'Semua peserta beserta nombor itik dan status (layak / pemenang).', s.total + ' peserta',
         [['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF']])}
-      ${cfg ? card('att', 'calcheck', 'Laporan Kehadiran', 'Senarai staf majlis dengan status, masa & kaedah pengesahan kehadiran (dari pelayan).', cfg.eventName,
+      ${cfg ? card('att', 'calcheck', 'Laporan Kehadiran', 'Senarai staf majlis beserta status, masa dan kaedah pengesahan kehadiran (daripada pelayan).', cfg.eventName,
         [['xlsx', 'Excel'], ['csv', 'CSV'], ['pdf', 'PDF']]) : ''}
-      ${card('audit', 'shield', 'Log Audit', 'Rekod setiap tindakan: import, cabutan, pemulihan, reset, log masuk.', 'Tidak boleh disunting',
+      ${card('audit', 'shield', 'Log Audit', 'Rekod setiap tindakan: import, cabutan, pemulihan, set semula dan log masuk.', 'Tidak boleh disunting',
         [['view', 'Lihat'], ['csv', 'CSV']])}
-      ${card('backup', 'database', 'Sandaran Data', 'Keseluruhan pangkalan data laptop ini (JSON) — simpan selepas setiap majlis.', 'Termasuk kunci majlis kehadiran',
+      ${card('backup', 'database', 'Sandaran Data', 'Keseluruhan pangkalan data komputer ini (JSON) — simpan selepas setiap majlis.', 'Termasuk kunci majlis kehadiran',
         [['json', 'Muat turun']])}
     </div>`);
 
@@ -44,17 +44,17 @@ export async function render(el) {
       const sub = (st.eventName ? st.eventName + ' · ' : '') + 'Dijana ' + new Date().toLocaleString('ms-MY');
       if (k === 'win') {
         const rows = await store.listWinners();
-        if (f === 'xlsx') await exportXlsx('pemenang', WINNER_COLUMNS, rows, 'Winners');
+        if (f === 'xlsx') await exportXlsx('pemenang', WINNER_COLUMNS, rows, 'Pemenang');
         else if (f === 'csv') exportCsv('pemenang', WINNER_COLUMNS, rows);
-        else printReport({ title: 'LUCKY DUCK RACE — Laporan Pemenang', subtitle: sub, columns: WINNER_COLUMNS.filter((c) => c[0] !== 'Duck Number'), rows, footer: rows.length + ' rekod' });
+        else printReport({ title: 'LUCKY DUCK RACE — Laporan Pemenang', subtitle: sub, columns: WINNER_COLUMNS.filter((c) => c[0] !== 'No. Itik'), rows, footer: rows.length + ' rekod' });
       } else if (k === 'part') {
         const rows = await store.listParticipants();
-        if (f === 'xlsx') await exportXlsx('peserta', PARTICIPANT_COLUMNS, rows, 'Participants');
+        if (f === 'xlsx') await exportXlsx('peserta', PARTICIPANT_COLUMNS, rows, 'Peserta');
         else if (f === 'csv') exportCsv('peserta', PARTICIPANT_COLUMNS, rows);
         else printReport({ title: 'LUCKY DUCK RACE — Senarai Peserta Cabutan', subtitle: sub, columns: PARTICIPANT_COLUMNS, rows, footer: rows.length + ' peserta' });
       } else if (k === 'att') {
         const rows = (await att.listStaff()).sort((a, c) => a.staff_id.localeCompare(c.staff_id));
-        if (f === 'xlsx') await exportXlsx('kehadiran', ATT_COLUMNS, rows, 'Attendance');
+        if (f === 'xlsx') await exportXlsx('kehadiran', ATT_COLUMNS, rows, 'Kehadiran');
         else if (f === 'csv') exportCsv('kehadiran', ATT_COLUMNS, rows);
         else {
           const n = rows.filter((r) => r.checked_in_at).length;

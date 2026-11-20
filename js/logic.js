@@ -27,10 +27,10 @@ export function normalizeStaffId(v) {
 }
 
 export function validateStaffId(id) {
-  if (!id) return 'Staff ID kosong';
-  if (id.length > FIELD_LIMITS.staffId) return 'Staff ID melebihi ' + FIELD_LIMITS.staffId + ' aksara';
-  if (/^\d+(\.\d+)?E[+-]?\d+$/i.test(id)) return 'Staff ID dalam format saintifik Excel (cth 1.2E+5) — format lajur sebagai Text';
-  if (!STAFF_ID_RE.test(id)) return 'Staff ID mengandungi aksara tidak sah';
+  if (!id) return 'No. Pekerja kosong';
+  if (id.length > FIELD_LIMITS.staffId) return 'No. Pekerja melebihi ' + FIELD_LIMITS.staffId + ' aksara';
+  if (/^\d+(\.\d+)?E[+-]?\d+$/i.test(id)) return 'No. Pekerja dalam format saintifik Excel (cth. 1.2E+5) — tetapkan format lajur sebagai Teks';
+  if (!STAFF_ID_RE.test(id)) return 'No. Pekerja mengandungi aksara tidak sah';
   return '';
 }
 
@@ -49,8 +49,8 @@ export function guessMapping(headers) {
     return -1;
   };
   return {
-    name: find('staff name', 'nama staf', 'nama', 'name', 'participant'),
-    staffId: find('staff id', 'id staf', 'no staf', 'no. staf', 'staff no', 'no pekerja', 'employee id', 'id'),
+    name: find('staff name', 'nama staf', 'nama pekerja', 'nama', 'name', 'participant'),
+    staffId: find('staff id', 'no. pekerja', 'no pekerja', 'id staf', 'no staf', 'no. staf', 'staff no', 'employee id', 'id'),
     department: find('department', 'jabatan', 'unit', 'bahagian', 'dept', 'fakulti'),
   };
 }
@@ -84,10 +84,10 @@ export function validateRows(rows, map, existingIds = new Set()) {
       it.message = errs.join('; ');
     } else if (seen.has(staffId)) {
       it.status = 'dupFile';
-      it.message = 'Staff ID berulang dalam fail (baris ' + seen.get(staffId) + ')';
+      it.message = 'No. Pekerja berulang dalam fail (baris ' + seen.get(staffId) + ')';
     } else if (existingIds.has(staffId)) {
       it.status = 'exists';
-      it.message = 'Staff ID sudah wujud dalam pangkalan data';
+      it.message = 'No. Pekerja sudah wujud dalam pangkalan data';
     }
     if (staffId && !seen.has(staffId) && it.status !== 'error') seen.set(staffId, it.row);
     if (!department && it.status === 'ok') it.message = 'Jabatan kosong (dibenarkan)';
@@ -120,8 +120,14 @@ export function toCsv(rows) {
 // ----------------------------------------------------------------------------- 2. Hadiah
 
 export const PRIZE_CATEGORIES = Object.freeze([
-  'Grand Prize', 'First Prize', 'Second Prize', 'Third Prize', 'Consolation Prize', 'Special Prize',
+  'Hadiah Utama', 'Hadiah Pertama', 'Hadiah Kedua', 'Hadiah Ketiga', 'Hadiah Sagu Hati', 'Hadiah Istimewa',
 ]);
+
+/** Nama kategori versi lama (Inggeris) → Bahasa Melayu. */
+export const LEGACY_CATEGORY = Object.freeze({
+  'Grand Prize': 'Hadiah Utama', 'First Prize': 'Hadiah Pertama', 'Second Prize': 'Hadiah Kedua',
+  'Third Prize': 'Hadiah Ketiga', 'Consolation Prize': 'Hadiah Sagu Hati', 'Special Prize': 'Hadiah Istimewa',
+});
 
 /**
  * Status setiap hadiah: berapa sudah dimenangi (rekod aktif sahaja) dan baki.

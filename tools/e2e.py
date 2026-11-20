@@ -118,7 +118,7 @@ async def main():
         # 6. Cabutan Consolation (20, grand finale)
         await page.goto(URL + '#/draw')
         await page.wait_for_selector('#d-prize')
-        opt = await page.eval_on_selector('#d-prize', "s => [...s.options].find(o => o.text.includes('Consolation')).value")
+        opt = await page.eval_on_selector('#d-prize', "s => [...s.options].find(o => o.text.includes('Sagu Hati')).value")
         await page.select_option('#d-prize', opt)
         await page.check('input[name=rv][value=finale]')
         assert await page.input_value('#d-count') == '20'
