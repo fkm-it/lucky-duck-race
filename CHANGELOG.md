@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0 — 2026-11-20 — Maskot 3D
+
+- 4 maskot Rockstar Duck (gitar, berlari, trofi, thumbs up) kini render 3D sebenar (Three.js, `tools/mascot3d/`, `tools/render-mascots.py`) menggantikan SVG rata.
+
 ## 2.0.0 — 2026-11-20 — ROCK THE DRAW
 - Jenama baharu **ROCK THE DRAW — "LET'S ROCK. LET'S WIN!"**: logo emas metalik + neon merah, ikon aplikasi baharu.
 - Maskot rasmi **Rockstar Duck** (imej daripada pengguna) + 4 variasi vektor: bergitar, berlari, memegang trofi, thumbs up.

@@ -111,7 +111,7 @@ async function showAuth() {
       ${concertBg()}
       <form class="auth-card" id="auth-form" autocomplete="off">
         <img class="auth-logo" src="icons/logo.svg" alt="Rock The Draw">
-        <img class="auth-mascot" src="icons/duck-guitar.svg" alt="">
+        <img class="auth-mascot" src="icons/duck-guitar.webp" alt="">
         <h2>${first ? 'Sediakan akaun pentadbir' : 'Log Masuk Panel Pentadbir'}</h2>
         <p class="muted">${first ? 'Tetapkan kata laluan pentadbir untuk komputer ini (sekurang-kurangnya 8 aksara, mengandungi huruf dan nombor).' : 'Masukkan kata laluan pentadbir.'}</p>
         <label class="field field-ic"><span>Kata laluan</span>${icon('lock')}<input type="password" id="pw1" required minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}"></label>

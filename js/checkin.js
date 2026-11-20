@@ -130,7 +130,7 @@ function success(info, p, r) {
       <div class="ci-ok-thanks">Terima kasih,</div>
       <div class="ci-ok-name">${r.name}</div>
       <p class="ci-ok-msg">${r.already ? html`Kehadiran anda telah direkodkan pada <b>${timeOf(r.checked_in_at)}</b>. ` : ''}Anda telah didaftarkan sebagai peserta <b>Cabutan Bertuah</b> Rock The Draw. Let's rock! 🤘</p>
-      <img class="ci-ok-mascot" src="icons/duck-thumbs.svg" alt="">
+      <img class="ci-ok-mascot" src="icons/duck-thumbs.webp" alt="">
       <button class="btn btn-ghost btn-block" id="ci-next">Daftar staf lain</button>
     </div>`);
   if (navigator.vibrate) navigator.vibrate(80);

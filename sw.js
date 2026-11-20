@@ -1,7 +1,7 @@
 /* sw.js — DIJANA oleh tools/build-sw.mjs. Jangan sunting terus; sunting tools/sw.template.js.
  * Strategi: SEMUA aset aplikasi dicache semasa pemasangan → aplikasi berfungsi sepenuhnya LUAR TALIAN
  * selepas lawatan pertama (penting untuk dewan majlis tanpa WiFi stabil). Data (IndexedDB) tidak disentuh. */
-var CACHE = 'ldr-d92bdeaf4238';
+var CACHE = 'ldr-5f7116b76d41';
 var ASSETS = [
   "./",
   "index.html",
@@ -45,10 +45,10 @@ var ASSETS = [
   "vendor/three.module.min.js",
   "vendor/xlsx.full.min.js",
   "icons/apple-touch-icon.png",
-  "icons/duck-guitar.svg",
-  "icons/duck-run.svg",
-  "icons/duck-thumbs.svg",
-  "icons/duck-trophy.svg",
+  "icons/duck-guitar.webp",
+  "icons/duck-run.webp",
+  "icons/duck-thumbs.webp",
+  "icons/duck-trophy.webp",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon.svg",

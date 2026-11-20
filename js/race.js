@@ -199,11 +199,11 @@ export async function openStage(o) {
     const el = root.querySelector('#stg-count');
     for (const n of ['3', '2', '1']) {
       if (state.closed) return;
-      el.innerHTML = '<span class="cd-num">' + n + '</span><img class="cd-duck" src="icons/duck-run.svg" alt="">';
+      el.innerHTML = '<span class="cd-num">' + n + '</span><img class="cd-duck" src="icons/duck-run.webp" alt="">';
       sfx.countdownBeep();
       await sleep(1000);
     }
-    el.innerHTML = '<span class="cd-num cd-go">ROCK ON!</span><img class="cd-duck" src="icons/duck-guitar.svg" alt="">';
+    el.innerHTML = '<span class="cd-num cd-go">ROCK ON!</span><img class="cd-duck" src="icons/duck-guitar.webp" alt="">';
     setTimeout(() => { el.innerHTML = ''; }, 900);
   }
 
@@ -235,7 +235,7 @@ export async function openStage(o) {
 
   const ribbon = (sub) => html`
     <div class="tahniah">
-      <img class="th-mascot" src="icons/duck-trophy.svg" alt=""><div class="th-trophy" aria-hidden="true">🏆</div>
+      <img class="th-mascot" src="icons/duck-trophy.webp" alt=""><div class="th-trophy" aria-hidden="true">🏆</div>
       <div class="th-ribbon"><span>TAHNIAH!</span></div>
       <div class="th-sub">${sub}</div>
     </div>`;
