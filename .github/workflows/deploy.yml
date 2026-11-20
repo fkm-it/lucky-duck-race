@@ -1,0 +1,69 @@
+# Deploy: setiap push ke main → ujian → binaan → GitHub Pages.
+# Persediaan SEKALI: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Ujian unit & storan (rawak, cabutan, import, pulih, reset)
+        run: npm test
+      - name: Semakan statik & sw.js terkini
+        run: npm run check
+
+  pages:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: SheetJS versi terkini (CDN rasmi SheetJS — membetulkan CVE versi npm 0.18.x)
+        run: |
+          set -e
+          if curl -fsSL --retry 3 -o /tmp/xlsx.js https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js && grep -q 'XLSX' /tmp/xlsx.js; then
+            cp /tmp/xlsx.js vendor/xlsx.full.min.js
+            echo "SheetJS 0.20.3 digunakan"
+          else
+            echo "::warning::CDN SheetJS tidak dapat dicapai — guna salinan vendor sedia ada"
+          fi
+      - name: Bina folder site/
+        run: |
+          node tools/build-sw.mjs
+          mkdir -p site
+          cp -r index.html manifest.webmanifest sw.js css js vendor icons samples site/
+          touch site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Terbit
+        id: deployment
+        uses: actions/deploy-pages@v4
