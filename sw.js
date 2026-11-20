@@ -1,13 +1,18 @@
 /* sw.js — DIJANA oleh tools/build-sw.mjs. Jangan sunting terus; sunting tools/sw.template.js.
  * Strategi: SEMUA aset aplikasi dicache semasa pemasangan → aplikasi berfungsi sepenuhnya LUAR TALIAN
  * selepas lawatan pertama (penting untuk dewan majlis tanpa WiFi stabil). Data (IndexedDB) tidak disentuh. */
-var CACHE = 'ldr-e8eb5767a562';
+var CACHE = 'ldr-d92bdeaf4238';
 var ASSETS = [
   "./",
   "index.html",
   "checkin.html",
   "manifest.webmanifest",
   "css/app.css",
+  "css/rock.css",
+  "fonts/bebas-neue.woff2",
+  "fonts/inter-400.woff2",
+  "fonts/inter-600.woff2",
+  "fonts/inter-800.woff2",
   "js/attendance.js",
   "js/audio.js",
   "js/auth.js",
@@ -24,6 +29,7 @@ var ASSETS = [
   "js/race3d.js",
   "js/rng.js",
   "js/store.js",
+  "js/theme.js",
   "js/util.js",
   "js/views/attendance.js",
   "js/views/audit.js",
@@ -39,12 +45,17 @@ var ASSETS = [
   "vendor/three.module.min.js",
   "vendor/xlsx.full.min.js",
   "icons/apple-touch-icon.png",
+  "icons/duck-guitar.svg",
+  "icons/duck-run.svg",
+  "icons/duck-thumbs.svg",
+  "icons/duck-trophy.svg",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon.svg",
   "icons/logo.svg",
-  "icons/mascot.svg",
-  "icons/maskable-512.png"
+  "icons/maskable-512.png",
+  "icons/rockstar-duck.jpg",
+  "icons/rockstar-duck.webp"
 ];
 
 self.addEventListener('install', function (e) {

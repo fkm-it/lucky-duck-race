@@ -46,19 +46,19 @@ export async function render(el) {
         const rows = await store.listWinners();
         if (f === 'xlsx') await exportXlsx('pemenang', WINNER_COLUMNS, rows, 'Pemenang');
         else if (f === 'csv') exportCsv('pemenang', WINNER_COLUMNS, rows);
-        else printReport({ title: 'LUCKY DUCK RACE — Laporan Pemenang', subtitle: sub, columns: WINNER_COLUMNS.filter((c) => c[0] !== 'No. Itik'), rows, footer: rows.length + ' rekod' });
+        else printReport({ title: 'ROCK THE DRAW — Laporan Pemenang', subtitle: sub, columns: WINNER_COLUMNS.filter((c) => c[0] !== 'No. Itik'), rows, footer: rows.length + ' rekod' });
       } else if (k === 'part') {
         const rows = await store.listParticipants();
         if (f === 'xlsx') await exportXlsx('peserta', PARTICIPANT_COLUMNS, rows, 'Peserta');
         else if (f === 'csv') exportCsv('peserta', PARTICIPANT_COLUMNS, rows);
-        else printReport({ title: 'LUCKY DUCK RACE — Senarai Peserta Cabutan', subtitle: sub, columns: PARTICIPANT_COLUMNS, rows, footer: rows.length + ' peserta' });
+        else printReport({ title: 'ROCK THE DRAW — Senarai Peserta Cabutan', subtitle: sub, columns: PARTICIPANT_COLUMNS, rows, footer: rows.length + ' peserta' });
       } else if (k === 'att') {
         const rows = (await att.listStaff()).sort((a, c) => a.staff_id.localeCompare(c.staff_id));
         if (f === 'xlsx') await exportXlsx('kehadiran', ATT_COLUMNS, rows, 'Kehadiran');
         else if (f === 'csv') exportCsv('kehadiran', ATT_COLUMNS, rows);
         else {
           const n = rows.filter((r) => r.checked_in_at).length;
-          printReport({ title: 'LUCKY DUCK RACE — Laporan Kehadiran', subtitle: sub, columns: ATT_COLUMNS, rows, footer: 'Hadir ' + n + ' / ' + rows.length + ' staf' });
+          printReport({ title: 'ROCK THE DRAW — Laporan Kehadiran', subtitle: sub, columns: ATT_COLUMNS, rows, footer: 'Hadir ' + n + ' / ' + rows.length + ' staf' });
         }
       } else if (k === 'audit') {
         if (f === 'view') { location.hash = '#/audit'; return; }

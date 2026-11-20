@@ -163,7 +163,7 @@ async function renderSetup(el, ctx) {
   const s = await store.getSettings();
   mount(el, html`
     <section class="card setup-card">
-      <img class="setup-mascot" src="icons/mascot.svg" alt="">
+      <img class="setup-mascot" src="icons/duck-guitar.svg" alt="">
       <h2>Pendaftaran kehadiran dengan kod QR</h2>
       <ol class="setup-steps">
         <li>Muat naik <b>senarai semua staf</b> (No. Pekerja, Nama, Jabatan) ke pelayan kehadiran.</li>
@@ -193,14 +193,14 @@ export function showQrFullscreen(cfg, url) {
   att.qrSvg(url).then((svg) => {
     mount(wrap, html`
       <div class="standee">
-        <img class="sd-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+        <img class="sd-logo" src="icons/logo.svg" alt="Rock The Draw">
         <div class="sd-head">Pendaftaran Kehadiran Staf</div>
         <div class="sd-event">${cfg.eventName}</div>
         <div class="sd-code">${raw(svg)}</div>
         <div class="sd-cta">Sila imbas kod QR ini<br>untuk mengesahkan kehadiran</div>
         <div class="sd-count" id="qf-count"></div>
         <div class="sd-check" aria-hidden="true"></div>
-        <img class="sd-mascot" src="icons/mascot.svg" alt="">
+        <img class="sd-mascot" src="icons/duck-guitar.svg" alt="">
       </div>
       <button class="sbtn qf-close" aria-label="Tutup">✕</button>`);
     document.body.appendChild(wrap);
@@ -230,14 +230,14 @@ async function printQr(cfg, url) {
   const svg = await att.qrSvg(url);
   const root = document.getElementById('print-root');
   mount(root, html`<div class="qr-poster standee">
-    <img class="sd-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+    <img class="sd-logo" src="icons/logo.svg" alt="Rock The Draw">
     <div class="sd-head">Pendaftaran Kehadiran Staf</div>
     <div class="sd-event">${cfg.eventName}</div>
     <div class="sd-code">${raw(svg)}</div>
     <div class="sd-cta">Sila imbas kod QR ini<br>untuk mengesahkan kehadiran</div>
     <ol class="qp-steps"><li>Imbas kod QR dengan kamera telefon</li><li>Masukkan No. Pekerja</li><li>Semak maklumat &amp; tekan <b>Sahkan Kehadiran</b></li></ol>
     <div class="sd-check" aria-hidden="true"></div>
-    <img class="sd-mascot" src="icons/mascot.svg" alt="">
+    <img class="sd-mascot" src="icons/duck-guitar.svg" alt="">
   </div>`);
   document.body.classList.add('printing', 'printing-poster');
   const done = () => { document.body.classList.remove('printing', 'printing-poster'); root.innerHTML = ''; window.removeEventListener('afterprint', done); };

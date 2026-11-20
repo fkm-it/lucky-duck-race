@@ -3,6 +3,7 @@
  */
 import { html, mount, toast, errMsg, $, fmtNum } from './util.js';
 import { icon } from './icons.js';
+import { concertBg } from './theme.js';
 import * as auth from './auth.js';
 import * as store from './store.js';
 import * as sfx from './audio.js';
@@ -47,7 +48,7 @@ const routeId = () => (location.hash.replace(/^#\/?/, '') || '').split('?')[0];
 // ----------------------------------------------------------------------------- Paparan Utama (awam)
 
 async function showHome() {
-  document.title = 'Lucky Duck Race — Sistem Pendaftaran Kehadiran & Cabutan Bertuah';
+  document.title = "Rock The Draw — Let's Rock. Let's Win!";
   const s = await store.getSettings();
   const tiles = [
     ['dashboard', 'monitor', 'Dashboard Pentadbir'], ['staff', 'idcard', 'Data Staf'], ['attendance', 'calcheck', 'Kehadiran'],
@@ -55,23 +56,24 @@ async function showHome() {
   ];
   mount(app, html`
     <div class="home">
-      <div class="home-stage" aria-hidden="true"><i></i><i></i><i></i></div>
+      ${concertBg()}
       <header class="home-hero">
-        <img class="home-mascot" src="icons/mascot.svg" alt="">
+        <div class="home-poster"><img src="icons/rockstar-duck.webp" alt="Maskot rasmi Rockstar Duck"></div>
         <div class="home-brand">
-          <img class="home-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+          <img class="home-logo" src="icons/logo.svg" alt="Rock The Draw">
+          <div class="home-slogan">LET'S ROCK. LET'S WIN!</div>
           <div class="home-tag">Sistem Pendaftaran Kehadiran &amp; Cabutan Bertuah</div>
-          ${s.eventName ? html`<div class="home-event">${s.eventName}</div>` : ''}
+          ${s.eventName ? html`<div class="home-event">${icon('flag')} ${s.eventName}</div>` : ''}
         </div>
       </header>
       <div class="home-ctas">
-        <button class="home-cta cta-blue" data-go="checkin">
+        <button class="home-cta cta-purple" data-go="checkin">
           <span class="cta-ic">${icon('scan')}</span>
           <span class="cta-t"><b>Pendaftaran Kehadiran Staf</b><small>(Imbas Kod QR)</small></span>
           <span class="cta-arr">${icon('arrow')}</span>
         </button>
-        <button class="home-cta cta-gold" data-go="draw">
-          <span class="cta-ic cta-trophy">🏆</span>
+        <button class="home-cta cta-red" data-go="draw">
+          <span class="cta-ic cta-trophy">🤘</span>
           <span class="cta-t"><b>Cabutan Bertuah</b><small>(Lucky Draw)</small></span>
           <span class="cta-arr">${icon('arrow')}</span>
         </button>
@@ -106,9 +108,10 @@ async function showAuth() {
   const first = !(await auth.hasAdmin());
   mount(app, html`
     <div class="auth-wrap">
+      ${concertBg()}
       <form class="auth-card" id="auth-form" autocomplete="off">
-        <img class="auth-logo" src="icons/logo.svg" alt="Lucky Duck Race">
-        <img class="auth-mascot" src="icons/mascot.svg" alt="">
+        <img class="auth-logo" src="icons/logo.svg" alt="Rock The Draw">
+        <img class="auth-mascot" src="icons/duck-guitar.svg" alt="">
         <h2>${first ? 'Sediakan akaun pentadbir' : 'Log Masuk Panel Pentadbir'}</h2>
         <p class="muted">${first ? 'Tetapkan kata laluan pentadbir untuk komputer ini (sekurang-kurangnya 8 aksara, mengandungi huruf dan nombor).' : 'Masukkan kata laluan pentadbir.'}</p>
         <label class="field field-ic"><span>Kata laluan</span>${icon('lock')}<input type="password" id="pw1" required minlength="8" autocomplete="${first ? 'new-password' : 'current-password'}"></label>
@@ -147,7 +150,7 @@ function shell() {
   mount(app, html`
     <div class="shell">
       <aside class="side" id="side">
-        <a class="side-brand" href="#/home" title="Paparan Utama"><img src="icons/logo.svg" alt="Lucky Duck Race"><small>Panel Pentadbir</small></a>
+        <a class="side-brand" href="#/home" title="Paparan Utama"><img src="icons/logo.svg" alt="Rock The Draw"><small>Panel Pentadbir</small></a>
         <nav class="side-nav" aria-label="Navigasi utama">
           ${ROUTES.filter((r) => r.nav).map((r) => html`<a href="#/${r.id}" data-r="${r.id}">${icon(r.icon)}<span>${r.label}</span></a>`)}
         </nav>
@@ -183,7 +186,7 @@ async function route() {
   document.querySelectorAll('.side-nav a').forEach((a) => a.classList.toggle('active', a.dataset.r === navId));
   $('#side').classList.remove('open');
   $('#page-title').textContent = r.title;
-  document.title = r.title + ' · Lucky Duck Race';
+  document.title = r.title + ' · Rock The Draw';
   // Elemen baharu setiap paparan → pendengar acara lama tidak bertindih
   const old = $('#view');
   const view = old.cloneNode(false);

@@ -88,7 +88,7 @@ export async function render(el, ctx) {
         else {
           const s = await store.getSettings();
           printReport({
-            title: 'LUCKY DUCK RACE — Laporan Pemenang', subtitle: (s.eventName ? s.eventName + ' · ' : '') + 'Dijana ' + new Date().toLocaleString('ms-MY'),
+            title: 'ROCK THE DRAW — Laporan Pemenang', subtitle: (s.eventName ? s.eventName + ' · ' : '') + 'Dijana ' + new Date().toLocaleString('ms-MY'),
             columns: WINNER_COLUMNS.filter((c) => c[0] !== 'No. Itik'), rows,
             footer: rows.length + ' rekod · ' + draws.length + ' cabutan · Pemilihan rawak kriptografi (Web Crypto API).',
           });

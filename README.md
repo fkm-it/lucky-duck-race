@@ -1,4 +1,6 @@
-# 🦆 LUCKY DUCK RACE — *Let the Luck Race Begin!*
+# 🤘 ROCK THE DRAW — *Let's Rock. Let's Win!*
+
+(dahulunya Lucky Duck Race)
 
 Sistem cabutan bertuah **perlumbaan itik 3D** untuk majlis korporat, universiti, makan malam tahunan dan majlis penghargaan staf. Setiap peserta = seekor itik. Pemenang dipilih secara **rawak kriptografi** sebelum perlumbaan, animasi memaparkan keputusan itu, dan pemenang **dibuang automatik** daripada kumpulan layak.
 

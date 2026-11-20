@@ -108,7 +108,7 @@ export function printReport({ title, subtitle, columns, rows, footer = '' }) {
   const root = document.getElementById('print-root');
   const head = columns.map((c) => '<th>' + esc(c[0]) + '</th>').join('');
   const body = rows.map((r) => '<tr>' + columns.map((c) => '<td>' + esc(c[1](r)) + '</td>').join('') + '</tr>').join('');
-  root.innerHTML = '<div class="pr-head"><div class="pr-logo">🦆</div><div><h1>' + esc(title) + '</h1><p>' + esc(subtitle) + '</p></div></div>' +
+  root.innerHTML = '<div class="pr-head"><div class="pr-logo">🤘</div><div><h1>' + esc(title) + '</h1><p>' + esc(subtitle) + '</p></div></div>' +
     '<table class="pr-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>' +
     '<p class="pr-foot">' + esc(footer) + '</p>';
   document.body.classList.add('printing');

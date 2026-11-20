@@ -4,7 +4,6 @@
  */
 import { computeLayout, progressAt } from './logic.js';
 
-const LANE_COLORS = ['#7C3AED', '#DB2777', '#9333EA', '#2563EB', '#C026D3', '#4F46E5', '#A21CAF', '#6D28D9'];
 
 export class Race2D {
   constructor(host, opt) {
@@ -89,37 +88,45 @@ export class Race2D {
     const X = (x) => ((x - this.viewX) * ppu + this.w * 0.5) * dpr;
 
     g.setTransform(1, 0, 0, 1, 0, 0);
-    // Langit & penonton
+    // Latar konsert: dinding LED + penonton bersiluet + lampu telefon
     const sky = g.createLinearGradient(0, 0, 0, top * dpr);
-    sky.addColorStop(0, '#1E3A8A'); sky.addColorStop(1, '#60A5FA');
+    sky.addColorStop(0, '#05030A'); sky.addColorStop(1, '#1A0B2E');
     g.fillStyle = sky; g.fillRect(0, 0, this.canvas.width, top * dpr);
-    for (let r = 0; r < 3; r++) {
-      for (let k = 0; k < 80; k++) {
-        const cx = ((k * 37 + r * 13 - this.viewX * ppu * 0.4) % (this.w + 40) + this.w + 40) % (this.w + 40) - 20;
-        const cy = top * (0.45 + r * 0.18) - Math.max(0, Math.sin(this.clock * 6 + k + r)) * (this.phase === 'race' ? 5 : 2);
-        g.fillStyle = LANE_COLORS[(k + r) % LANE_COLORS.length];
-        g.beginPath(); g.arc(cx * dpr, cy * dpr, 6 * dpr, 0, 6.28); g.fill();
-        g.fillStyle = '#F1C27D'; g.beginPath(); g.arc(cx * dpr, (cy - 8) * dpr, 4 * dpr, 0, 6.28); g.fill();
-      }
+    const bars = 40; const bw = this.canvas.width / bars;
+    for (let i = 0; i < bars; i++) {
+      const v = 0.3 + 0.7 * Math.abs(Math.sin(this.clock * (2 + (i % 5) * 0.7) + i));
+      g.fillStyle = i % 2 ? 'rgba(255,30,60,.35)' : 'rgba(168,85,247,.35)';
+      g.fillRect(i * bw + 2, top * dpr * (1 - v * 0.8), bw - 4, top * dpr * v * 0.8);
     }
-    g.fillStyle = '#4CAF50'; g.fillRect(0, top * dpr - 6 * dpr, this.canvas.width, (bottom - top) * dpr + 12 * dpr);
-    // Lorong
+    for (let k = 0; k < 90; k++) {
+      const cx = ((k * 23 - this.viewX * ppu * 0.4) % (this.w + 40) + this.w + 40) % (this.w + 40) - 20;
+      const jump = Math.max(0, Math.sin(this.clock * 7 + k)) * (this.phase === 'race' ? 6 : 2);
+      const cy = top * 0.82 - jump;
+      g.fillStyle = '#0A0A0F'; g.beginPath(); g.arc(cx * dpr, cy * dpr, 7 * dpr, 0, 6.28); g.fill();
+      g.beginPath(); g.arc(cx * dpr, (cy - 10) * dpr, 5 * dpr, 0, 6.28); g.fill();
+      if (k % 4 === 0) { g.fillStyle = '#FFF7D6'; g.beginPath(); g.arc((cx + 6) * dpr, (cy - 18) * dpr, 1.6 * dpr, 0, 6.28); g.fill(); }
+    }
+    g.fillStyle = '#0B0B10'; g.fillRect(0, top * dpr - 6 * dpr, this.canvas.width, (bottom - top) * dpr + 12 * dpr);
+    // Lorong gelap + garisan neon
     for (let l = 0; l < L.lanes; l++) {
-      g.fillStyle = LANE_COLORS[l % LANE_COLORS.length];
-      g.globalAlpha = 0.85;
+      g.fillStyle = l % 2 ? '#17121C' : '#120F17';
       g.fillRect(0, (top + l * laneH) * dpr, this.canvas.width, laneH * dpr);
-      g.globalAlpha = 1;
-      g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(0, (top + l * laneH) * dpr, this.canvas.width, Math.max(1, dpr));
+      g.fillStyle = l % 2 ? '#A855F7' : '#FF1E3C';
+      g.shadowColor = g.fillStyle; g.shadowBlur = 8 * dpr;
+      g.fillRect(0, (top + l * laneH) * dpr, this.canvas.width, Math.max(1, dpr * 1.5));
+      g.shadowBlur = 0;
     }
     // Garisan
-    g.fillStyle = '#FFFFFF'; g.fillRect(X(0) - 2 * dpr, top * dpr, 4 * dpr, (bottom - top) * dpr);
+    g.fillStyle = '#A855F7'; g.fillRect(X(0) - 2 * dpr, top * dpr, 4 * dpr, (bottom - top) * dpr);
     const cs = Math.max(4, laneH / 2) * dpr;
     for (let y = top * dpr, k = 0; y < bottom * dpr; y += cs, k++) {
       g.fillStyle = k % 2 ? '#111' : '#FFF'; g.fillRect(X(L.finishX), y, cs, cs);
       g.fillStyle = k % 2 ? '#FFF' : '#111'; g.fillRect(X(L.finishX) + cs, y, cs, cs);
     }
-    g.font = `900 ${18 * dpr}px system-ui, sans-serif`; g.textAlign = 'center';
+    g.font = `${26 * dpr}px "Bebas Neue", Impact, sans-serif`; g.textAlign = 'center';
+    g.shadowColor = '#FF1E3C'; g.shadowBlur = 14 * dpr;
     g.fillStyle = '#fff'; g.fillText('START', X(0), (top - 10) * dpr); g.fillText('FINISH', X(L.finishX) + cs, (top - 10) * dpr);
+    g.shadowBlur = 0;
 
     // Itik
     const r = Math.max(3, Math.min(laneH * 0.42, 22));
@@ -135,11 +142,15 @@ export class Race2D {
       if (win || this.highlighted.has(i)) {
         g.fillStyle = 'rgba(255,215,0,.45)'; g.beginPath(); g.arc(sx, cy, rr * 1.7, 0, 6.28); g.fill();
       }
-      g.fillStyle = win ? '#FFD23F' : '#FFE14D';
+      // jaket kulit (emas untuk pemenang), kepala kuning, mohawk merah, cermin mata hitam
+      g.fillStyle = win ? '#F5C842' : '#15151A';
       g.beginPath(); g.ellipse(sx, cy, rr * 1.15, rr * 0.85, 0, 0, 6.28); g.fill();
+      g.fillStyle = '#FFD72E';
       g.beginPath(); g.arc(sx + rr * 0.75, cy - rr * 0.65, rr * 0.55, 0, 6.28); g.fill();
+      g.fillStyle = '#FF1E3C';
+      g.beginPath(); g.moveTo(sx + rr * 0.35, cy - rr * 1.05); g.lineTo(sx + rr * 0.55, cy - rr * 1.55); g.lineTo(sx + rr * 0.75, cy - rr * 1.12); g.lineTo(sx + rr * 0.95, cy - rr * 1.5); g.lineTo(sx + rr * 1.05, cy - rr * 1.0); g.fill();
       g.fillStyle = '#FF8C1A'; g.beginPath(); g.moveTo(sx + rr * 1.2, cy - rr * 0.75); g.lineTo(sx + rr * 1.75, cy - rr * 0.55); g.lineTo(sx + rr * 1.2, cy - rr * 0.4); g.fill();
-      if (r > 5) { g.fillStyle = '#111'; g.beginPath(); g.arc(sx + rr * 0.95, cy - rr * 0.8, rr * 0.1, 0, 6.28); g.fill(); }
+      if (r > 4) { g.fillStyle = '#000'; g.fillRect(sx + rr * 0.72, cy - rr * 0.9, rr * 0.5, rr * 0.2); }
       if (win && r > 4) { g.font = `${rr * 1.2}px system-ui`; g.fillText('👑', sx + rr * 0.7, cy - rr * 1.3); }
     }
   }

@@ -25,7 +25,7 @@ export function checkinUrl(cfg) {
 export async function createEvent(name) {
   const token = randomHex(16);
   const adminKey = randomHex(24);
-  const eventName = String(name || '').trim().slice(0, 160) || 'Majlis Lucky Duck Race';
+  const eventName = String(name || '').trim().slice(0, 160) || 'Majlis Rock The Draw';
   const eventId = await rpc('ldr_create_event', { p_name: eventName, p_token: token, p_admin_key: adminKey });
   const cfg = { eventId, token, adminKey, eventName, autoSync: true, since: null, createdAt: new Date().toISOString() };
   await saveConfig(cfg);

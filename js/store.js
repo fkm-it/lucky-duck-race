@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   eventName: '',
   eventDate: '',
   eventLocation: '',
-  subtitle: 'LET THE LUCK RACE BEGIN!',
+  subtitle: "LET'S ROCK. LET'S WIN!",
   renderMode: 'auto', // auto | 3d | 2d
   quality: 'high', // high | low
   raceDuration: 15,
@@ -34,6 +34,7 @@ export async function getSettings() {
   const rec = await get('settings', 'app');
   const v = rec ? rec.value : {};
   settingsCache = { ...DEFAULT_SETTINGS, ...v, volumes: { ...DEFAULT_SETTINGS.volumes, ...(v.volumes || {}) } };
+  if (settingsCache.subtitle === 'LET THE LUCK RACE BEGIN!') settingsCache.subtitle = DEFAULT_SETTINGS.subtitle;
   return settingsCache;
 }
 

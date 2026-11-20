@@ -55,8 +55,8 @@ export async function openStage(o) {
     <div class="stage-labels" id="stg-labels" aria-hidden="true"></div>
     <header class="stage-top">
       <div class="stage-title">
-        <img class="st-logo" src="icons/logo.svg" alt="Lucky Duck Race">
-        <div class="st-ribbon">CABUTAN BERTUAH</div>
+        <img class="st-logo" src="icons/logo.svg" alt="Rock The Draw">
+        <div class="st-ribbon">${st.subtitle}</div>
         ${st.eventName ? html`<div class="brand-event">${st.eventName}</div>` : ''}
       </div>
     </header>
@@ -199,11 +199,11 @@ export async function openStage(o) {
     const el = root.querySelector('#stg-count');
     for (const n of ['3', '2', '1']) {
       if (state.closed) return;
-      el.innerHTML = '<span class="cd-num">' + n + '</span>';
+      el.innerHTML = '<span class="cd-num">' + n + '</span><img class="cd-duck" src="icons/duck-run.svg" alt="">';
       sfx.countdownBeep();
       await sleep(1000);
     }
-    el.innerHTML = '<span class="cd-num cd-go">GO!</span>';
+    el.innerHTML = '<span class="cd-num cd-go">ROCK ON!</span><img class="cd-duck" src="icons/duck-guitar.svg" alt="">';
     setTimeout(() => { el.innerHTML = ''; }, 900);
   }
 
@@ -235,7 +235,7 @@ export async function openStage(o) {
 
   const ribbon = (sub) => html`
     <div class="tahniah">
-      <div class="th-trophy" aria-hidden="true">🏆</div>
+      <img class="th-mascot" src="icons/duck-trophy.svg" alt=""><div class="th-trophy" aria-hidden="true">🏆</div>
       <div class="th-ribbon"><span>TAHNIAH!</span></div>
       <div class="th-sub">${sub}</div>
     </div>`;
@@ -276,7 +276,7 @@ export async function openStage(o) {
       if (state.closed) return;
       ann.className = 'announce ann-reveal';
       mount(ann, html`
-        ${ribbon('PEMENANG CABUTAN BERTUAH')}
+        ${ribbon('ROCKSTAR CABUTAN BERTUAH')}
         ${winnerCard(w)}
         <button class="hud-go ann-next" id="ann-next">${i < list.length - 1 ? 'Pemenang seterusnya ▶' : 'Lihat semua pemenang ▶'}</button>`);
       sfx.victory(); sfx.firework(); sfx.applause(2.5);
@@ -292,7 +292,7 @@ export async function openStage(o) {
     const n = state.winners.length;
     ann.className = 'announce ann-gallery' + (n > 10 ? ' g-many' : '');
     mount(ann, html`
-      ${ribbon('PEMENANG CABUTAN BERTUAH')}
+      ${ribbon('ROCKSTAR CABUTAN BERTUAH')}
       <div class="gallery-prize">${prizeCat}${prizeLabel !== prizeCat ? ' — ' + prizeLabel : ''}</div>
       ${winnerTable(state.winners)}
       <div class="ann-actions"><button class="hud-go" id="ann-done">${icon('check')} Selesai</button></div>`);

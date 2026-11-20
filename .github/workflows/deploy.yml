@@ -58,7 +58,7 @@ jobs:
         run: |
           node tools/build-sw.mjs
           mkdir -p site
-          cp -r index.html checkin.html manifest.webmanifest sw.js css js vendor icons samples site/
+          cp -r index.html checkin.html manifest.webmanifest sw.js css fonts js vendor icons samples site/
           touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

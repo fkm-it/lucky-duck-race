@@ -6,6 +6,7 @@
 import { html, mount, $ } from './util.js';
 import { rpc, CloudError } from './cloud.js';
 import { icon } from './icons.js';
+import { concertBg } from './theme.js';
 
 const root = document.getElementById('ci');
 const SS = 'ldr.ci';
@@ -23,8 +24,9 @@ const timeOf = (iso) => new Date(iso).toLocaleTimeString('ms-MY', { hour: '2-dig
 
 function shell(eventName, inner) {
   mount(root, html`
+    ${concertBg()}
     <header class="ci-head">
-      <img class="ci-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+      <img class="ci-logo" src="icons/logo.svg" alt="Rock The Draw">
       ${eventName ? html`<div class="ci-event">${eventName}</div>` : ''}
     </header>
     <section class="ci-card">${inner}</section>
@@ -127,8 +129,8 @@ function success(info, p, r) {
       <h1>Kehadiran Disahkan!</h1>
       <div class="ci-ok-thanks">Terima kasih,</div>
       <div class="ci-ok-name">${r.name}</div>
-      <p class="ci-ok-msg">${r.already ? html`Kehadiran anda telah direkodkan pada <b>${timeOf(r.checked_in_at)}</b>. ` : ''}Anda telah didaftarkan sebagai peserta <b>Cabutan Bertuah</b> Lucky Duck Race.</p>
-      <img class="ci-ok-mascot" src="icons/mascot.svg" alt="">
+      <p class="ci-ok-msg">${r.already ? html`Kehadiran anda telah direkodkan pada <b>${timeOf(r.checked_in_at)}</b>. ` : ''}Anda telah didaftarkan sebagai peserta <b>Cabutan Bertuah</b> Rock The Draw. Let's rock! 🤘</p>
+      <img class="ci-ok-mascot" src="icons/duck-thumbs.svg" alt="">
       <button class="btn btn-ghost btn-block" id="ci-next">Daftar staf lain</button>
     </div>`);
   if (navigator.vibrate) navigator.vibrate(80);

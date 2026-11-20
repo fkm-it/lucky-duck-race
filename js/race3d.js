@@ -31,32 +31,48 @@ const M = (x = 0, y = 0, z = 0, sx = 1, sy = 1, sz = 1, rx = 0, ry = 0, rz = 0) 
 
 function duckGeometries(detail) {
   const seg = detail ? 18 : 10;
-  const torso = merge([
-    { geo: new THREE.SphereGeometry(0.5, seg, seg * 0.75 | 0), m: M(0, 0.62, 0, 1.25, 0.88, 0.95) },
+  // Kepala + ekor (kuning) — jaket hitam berasingan supaya pemenang boleh bertukar jaket EMAS
+  const head = merge([
     { geo: new THREE.SphereGeometry(0.33, seg, seg * 0.75 | 0), m: M(0.44, 1.12, 0) },
     { geo: new THREE.ConeGeometry(0.2, 0.42, 8), m: M(-0.62, 0.86, 0, 1, 1, 0.7, 0, 0, 1.05) },
   ]);
-  const beak = merge([{ geo: new THREE.SphereGeometry(0.16, 10, 8), m: M(0.8, 1.06, 0, 1.4, 0.45, 1.1) }]);
-  const eyes = merge([
-    { geo: new THREE.SphereGeometry(0.065, 8, 6), m: M(0.66, 1.22, 0.17) },
-    { geo: new THREE.SphereGeometry(0.065, 8, 6), m: M(0.66, 1.22, -0.17) },
+  const jacket = merge([
+    { geo: new THREE.SphereGeometry(0.5, seg, seg * 0.75 | 0), m: M(0, 0.62, 0, 1.27, 0.9, 0.97) },
+    { geo: new THREE.CylinderGeometry(0.2, 0.26, 0.16, 12), m: M(0.36, 0.92, 0) }, // kolar
   ]);
-  // Sayap: pangsi di bahu (asal geometri), memanjang ke belakang
+  const beak = merge([
+    { geo: new THREE.SphereGeometry(0.16, 10, 8), m: M(0.8, 1.08, 0, 1.4, 0.4, 1.1) },
+    { geo: new THREE.SphereGeometry(0.13, 10, 8), m: M(0.76, 0.96, 0, 1.3, 0.35, 1, 0, 0, -0.35) }, // paruh bawah (terbuka)
+  ]);
+  // Mohawk merah: deretan kon condong ke belakang
+  const spikes = [];
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    spikes.push({ geo: new THREE.ConeGeometry(0.075, 0.34 + Math.sin(t * Math.PI) * 0.14, 6), m: M(0.62 - t * 0.42, 1.44 + Math.sin(t * Math.PI) * 0.03 - t * 0.04, 0, 1, 1, 0.55, 0, 0, 0.5 + t * 0.35) });
+  }
+  const mohawk = merge(spikes);
+  // Cermin mata hitam: dua kanta + bingkai
+  const shades = merge([
+    { geo: new THREE.BoxGeometry(0.06, 0.13, 0.17), m: M(0.71, 1.22, 0.12) },
+    { geo: new THREE.BoxGeometry(0.06, 0.13, 0.17), m: M(0.71, 1.22, -0.12) },
+    { geo: new THREE.BoxGeometry(0.04, 0.03, 0.62), m: M(0.68, 1.27, 0) },
+  ]);
+  // Lengan jaket (sayap): pangsi di bahu
   const wingL = merge([{ geo: new THREE.SphereGeometry(0.3, 10, 8), m: M(-0.2, -0.02, 0.06, 1.35, 0.55, 0.32) }]);
   const wingR = merge([{ geo: new THREE.SphereGeometry(0.3, 10, 8), m: M(-0.2, -0.02, -0.06, 1.35, 0.55, 0.32) }]);
-  // Kaki: pangsi di pinggul, memanjang ke bawah + tapak
+  // Kaki + but rock hitam
   const leg = merge([
-    { geo: new THREE.CylinderGeometry(0.05, 0.05, 0.32, 6), m: M(0, -0.16, 0) },
-    { geo: new THREE.BoxGeometry(0.3, 0.05, 0.22), m: M(0.1, -0.32, 0) },
+    { geo: new THREE.CylinderGeometry(0.06, 0.06, 0.26, 6), m: M(0, -0.13, 0) },
+    { geo: new THREE.BoxGeometry(0.34, 0.14, 0.24), m: M(0.08, -0.31, 0) },
   ]);
-  // Goggle: tali gelap mengelilingi kepala + 2 kanta biru; bib putih di dada
-  const strap = merge([{ geo: new THREE.TorusGeometry(0.335, 0.04, 6, 24), m: M(0.44, 1.2, 0, 1, 1, 1, Math.PI / 2 - 0.12, 0, 0.18) }]);
-  const lens = merge([
-    { geo: new THREE.SphereGeometry(0.115, 12, 8), m: M(0.68, 1.25, 0.15, 0.55, 1, 1) },
-    { geo: new THREE.SphereGeometry(0.115, 12, 8), m: M(0.68, 1.25, -0.15, 0.55, 1, 1) },
+  // Baju-T merah di dada
+  const tee = merge([{ geo: new THREE.BoxGeometry(0.06, 0.36, 0.3), m: M(0.6, 0.66, 0, 1, 1, 1, 0, 0, -0.28) }]);
+  // Gitar elektrik di belakang (badan + leher)
+  const guitar = merge([
+    { geo: new THREE.SphereGeometry(0.22, 10, 8), m: M(-0.42, 0.62, 0, 1, 1.25, 0.32, 0, 0, 0.9) },
+    { geo: new THREE.BoxGeometry(0.06, 0.62, 0.05), m: M(-0.12, 0.95, 0, 1, 1, 1, 0, 0, 0.9) },
   ]);
-  const bib = merge([{ geo: new THREE.BoxGeometry(0.06, 0.34, 0.42), m: M(0.58, 0.62, 0, 1, 1, 1, 0, 0, -0.25) }]);
-  return { torso, beak, eyes, wingL, wingR, legL: leg, legR: leg.clone(), strap, lens, bib };
+  return { head, jacket, beak, mohawk, shades, wingL, wingR, legL: leg, legR: leg.clone(), tee, guitar };
 }
 
 function canvasTex(w, h, draw) {
@@ -80,13 +96,14 @@ function bannerTex(text, bg, fg, checker = false) {
       g.fillStyle = bg[0]; g.fillRect(w * 0.2, 14, w * 0.6, h - 28);
     }
     g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(0, 8, w, 6); g.fillRect(0, h - 14, w, 6);
-    g.fillStyle = fg; g.font = '900 120px system-ui, Arial Black, sans-serif';
+    g.font = '900 120px "Bebas Neue", Impact, system-ui, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = fg; g.shadowBlur = 28; g.fillStyle = '#fff';
     g.fillText(text, w / 2, h / 2 + 6);
   });
 }
 
-const LANE_COLORS = ['#7C3AED', '#DB2777', '#9333EA', '#2563EB', '#C026D3', '#4F46E5', '#A21CAF', '#6D28D9'];
+const NEON = ['#FF1E3C', '#A855F7'];
 
 // ----------------------------------------------------------------------------- Pemapar
 
@@ -142,18 +159,19 @@ export class Race3D {
     this.scene = s;
     s.background = canvasTex(4, 256, (g, w, h) => {
       const grd = g.createLinearGradient(0, 0, 0, h);
-      grd.addColorStop(0, '#1E3A8A'); grd.addColorStop(0.45, '#60A5FA'); grd.addColorStop(1, '#E0F2FE');
+      grd.addColorStop(0, '#000000'); grd.addColorStop(0.55, '#120621'); grd.addColorStop(1, '#2A0A1F');
       g.fillStyle = grd; g.fillRect(0, 0, w, h);
     });
-    s.fog = new THREE.Fog(0xcfe8ff, 90 + L.width, 260 + L.width * 2);
+    s.fog = new THREE.Fog(0x0a0510, 70 + L.width, 220 + L.width * 2);
 
     this.camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 1000);
     this.camPos = new THREE.Vector3(-30, 25, 40);
     this.camLook = new THREE.Vector3(0, 0, 0);
     this.camera.position.copy(this.camPos);
 
-    s.add(new THREE.HemisphereLight(0xdbeafe, 0x3f6212, 0.9));
-    const sun = new THREE.DirectionalLight(0xfff4d6, 2.2);
+    s.add(new THREE.HemisphereLight(0xc9c2ff, 0x1a0010, 0.8));
+    const rim = new THREE.DirectionalLight(0xffffff, 0.9); rim.position.set(-40, 30, 60); s.add(rim);
+    const sun = new THREE.DirectionalLight(0xfff0f5, 1.6);
     sun.position.set(30, 60, 25);
     sun.castShadow = this.high;
     const ext = Math.max(30, L.width * 0.7 + 10);
@@ -163,39 +181,39 @@ export class Race3D {
     s.add(sun); s.add(sun.target);
     this.sun = sun;
 
-    const spot = new THREE.SpotLight(0xfff2b0, 0, 40, Math.PI / 9, 0.5, 1.2);
+    const spot = new THREE.SpotLight(0xffd54a, 0, 45, Math.PI / 8, 0.45, 1.1);
     spot.position.set(L.finishX, 18, 0);
     s.add(spot); s.add(spot.target);
     this.spot = spot;
 
     // Rumput
-    const grass = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0x4caf50, roughness: 1 }));
+    const grass = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0x0b0b10, roughness: 0.55, metalness: 0.3 }));
     grass.rotation.x = -Math.PI / 2; grass.position.y = -0.02; grass.receiveShadow = true;
     s.add(grass);
 
     // Trek berlorong warna-warni
     const x0 = -L.depth - 14; const x1 = L.finishX + 30; const len = x1 - x0;
-    const tex = canvasTex(8, Math.max(64, L.lanes * 16), (g, w, h) => {
+    const lanesTex = (glow) => canvasTex(8, Math.max(64, L.lanes * 16), (g, w, h) => {
       const lh = h / L.lanes;
+      g.fillStyle = glow ? '#000' : '#141018'; g.fillRect(0, 0, w, h);
       for (let i = 0; i < L.lanes; i++) {
-        g.fillStyle = LANE_COLORS[i % LANE_COLORS.length];
-        g.fillRect(0, i * lh, w, lh);
-        g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, i * lh, w, lh * 0.5);
-        g.fillStyle = '#FFFFFF'; g.fillRect(0, i * lh, w, Math.max(1, lh * 0.08));
+        if (!glow) { g.fillStyle = i % 2 ? '#17121C' : '#120F17'; g.fillRect(0, i * lh, w, lh); }
+        g.fillStyle = NEON[i % 2]; g.fillRect(0, i * lh, w, Math.max(1, lh * 0.1));
       }
     });
-    const track = new THREE.Mesh(new THREE.PlaneGeometry(len, L.width), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }));
+    const track = new THREE.Mesh(new THREE.PlaneGeometry(len, L.width), new THREE.MeshStandardMaterial({
+      map: lanesTex(false), emissiveMap: lanesTex(true), emissive: 0xffffff, emissiveIntensity: 1.6, roughness: 0.4, metalness: 0.35 }));
     track.rotation.x = -Math.PI / 2; track.position.set(x0 + len / 2, 0, 0); track.receiveShadow = true;
     s.add(track);
     // Bahu trek
     [1, -1].forEach((sd) => {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(len, 0.25, 0.5), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }));
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(len, 0.25, 0.4), new THREE.MeshStandardMaterial({ color: sd > 0 ? 0xff1e3c : 0xa855f7, emissive: sd > 0 ? 0xff1e3c : 0xa855f7, emissiveIntensity: 2.2 }));
       curb.position.set(x0 + len / 2, 0.12, sd * (L.width / 2 + 0.25));
       curb.receiveShadow = true; s.add(curb);
     });
 
     // Garisan mula & penamat
-    const startLine = new THREE.Mesh(new THREE.PlaneGeometry(0.35, L.width), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const startLine = new THREE.Mesh(new THREE.PlaneGeometry(0.35, L.width), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
     startLine.rotation.x = -Math.PI / 2; startLine.position.set(0, 0.02, 0); s.add(startLine);
     const checker = canvasTex(64, 512, (g, w, h) => {
       const c = 16;
@@ -205,18 +223,126 @@ export class Race3D {
     const fin = new THREE.Mesh(new THREE.PlaneGeometry(1.4, L.width), new THREE.MeshBasicMaterial({ map: checker }));
     fin.rotation.x = -Math.PI / 2; fin.position.set(L.finishX + 0.7, 0.025, 0); s.add(fin);
 
-    this._arch(0, 'START', ['#7C3AED', '#4C1D95']);
-    this.finishArch = this._arch(L.finishX + 0.7, 'FINISH', ['#DB2777', '#9D174D']);
+    this._arch(0, 'START', ['#1A0B2E', '#0A0510'], '#A855F7');
+    this.finishArch = this._arch(L.finishX + 0.7, 'FINISH', ['#2A0510', '#0A0205'], '#FF1E3C');
 
     this._stands(x0, x1);
     this._lightTowers(x0, x1);
+    this._ledWall(x0, x1);
+    this._lasers(x0, x1);
+    this._smoke(x0, x1);
   }
 
-  _arch(x, text, bg) {
+  /** Dinding LED gergasi di belakang penonton — penyama bunyi beranimasi + jenama. */
+  _ledWall(x0, x1) {
+    const L = this.layout;
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 256;
+    this.ledCtx = c.getContext('2d');
+    this.ledTex = new THREE.CanvasTexture(c); this.ledTex.colorSpace = THREE.SRGBColorSpace;
+    const len = x1 - x0;
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(len * 0.9, len * 0.9 / 4), new THREE.MeshBasicMaterial({ map: this.ledTex, toneMapped: false, fog: false }));
+    wall.position.set((x0 + x1) / 2, 6 + len * 0.9 / 8 + 6, -(L.width / 2 + 22));
+    this.scene.add(wall);
+    this.ledT = 0;
+    this._drawLed(0);
+  }
+
+  _drawLed(t) {
+    const g = this.ledCtx; const w = 1024; const h = 256;
+    g.fillStyle = '#05030A'; g.fillRect(0, 0, w, h);
+    const bars = 48; const bw = w / bars;
+    const hype = this.phase === 'race' ? 1 : this.phase === 'done' ? 1.2 : 0.5;
+    for (let i = 0; i < bars; i++) {
+      const v = (0.25 + 0.75 * Math.abs(Math.sin(t * (2 + (i % 7) * 0.6) + i * 0.7))) * hype;
+      const bh = Math.min(h, v * h * 0.9);
+      const grd = g.createLinearGradient(0, h, 0, h - bh);
+      grd.addColorStop(0, '#7C3AED'); grd.addColorStop(0.6, '#FF1E3C'); grd.addColorStop(1, '#FFD54A');
+      g.fillStyle = grd; g.fillRect(i * bw + 2, h - bh, bw - 4, bh);
+    }
+    g.fillStyle = 'rgba(0,0,0,.35)'; for (let y = 0; y < h; y += 6) g.fillRect(0, y, w, 2); // grid LED
+    g.font = '900 120px "Bebas Neue", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = '#FF1E3C'; g.shadowBlur = 30; g.fillStyle = '#fff';
+    g.fillText(this.phase === 'done' ? 'ROCKSTAR WINNERS!' : 'ROCK THE DRAW', w / 2, h / 2);
+    g.shadowBlur = 0;
+    this.ledTex.needsUpdate = true;
+  }
+
+  /** Pancaran laser dari menara pentas (silinder nipis, aditif). */
+  _lasers(x0, x1) {
+    const L = this.layout;
+    this.lasers = [];
+    const geo = new THREE.CylinderGeometry(0.05, 0.05, 1, 6, 1, true); geo.translate(0, 0.5, 0);
+    const towers = [x0 + 14, (x0 + x1) / 2, x1 - 12];
+    towers.forEach((x, ti) => {
+      for (let k = 0; k < 3; k++) {
+        const col = (ti + k) % 2 ? 0xa855f7 : 0xff1e3c;
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, fog: false }));
+        m.position.set(x, 21, -(L.width / 2 + 17));
+        m.scale.set(this.high ? 1 : 1.6, 90, this.high ? 1 : 1.6);
+        this.scene.add(m);
+        this.lasers.push({ m, ph: ti * 1.7 + k * 2.1, sp: 0.5 + k * 0.25 });
+      }
+    });
+    // Kon lampu sorot (aditif)
+    const coneGeo = new THREE.ConeGeometry(7, 30, 24, 1, true); coneGeo.translate(0, -15, 0);
+    this.spots = towers.map((x, i) => {
+      const m = new THREE.Mesh(coneGeo, new THREE.MeshBasicMaterial({ color: i % 2 ? 0xa855f7 : 0xffffff, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+      m.position.set(x, 23, -(L.width / 2 + 15));
+      this.scene.add(m);
+      return { m, ph: i * 2 };
+    });
+    // Lampu berwarna sebenar (merah & ungu) yang bergerak
+    this.colorLights = [0xff1e3c, 0xa855f7].map((c) => { const l = new THREE.PointLight(c, 90, 60, 1.6); l.position.set(0, 12, 0); this.scene.add(l); return l; });
+  }
+
+  /** Asap pentas: titik lembut beraditif yang hanyut perlahan di atas trek. */
+  _smoke(x0, x1) {
+    const L = this.layout;
+    const n = this.high ? 160 : 70;
+    const pos = new Float32Array(n * 3);
+    this.smokeSeed = [];
+    for (let i = 0; i < n; i++) {
+      const x = x0 + Math.random() * (x1 - x0); const z = (Math.random() - 0.5) * (L.width + 30); const y = 0.4 + Math.random() * 2.2;
+      pos.set([x, y, z], i * 3); this.smokeSeed.push({ x, y, z, sp: 0.2 + Math.random() * 0.6, ph: Math.random() * 6.28 });
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const tex = canvasTex(128, 128, (g, w, h) => {
+      const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+      r.addColorStop(0, 'rgba(255,255,255,.55)'); r.addColorStop(0.5, 'rgba(255,255,255,.18)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = r; g.fillRect(0, 0, w, h);
+    });
+    this.smoke = new THREE.Points(geo, new THREE.PointsMaterial({ map: tex, size: 9, color: 0xc9b6ff, transparent: true, opacity: 0.32, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
+    this.scene.add(this.smoke);
+  }
+
+  _animateShow(dt) {
+    const t = this.clock;
+    const L = this.layout;
+    if (this.lasers) this.lasers.forEach((l) => { l.m.rotation.set(Math.sin(t * l.sp + l.ph) * 0.9 + 1.25, 0, Math.cos(t * l.sp * 0.8 + l.ph) * 0.7); });
+    if (this.spots) this.spots.forEach((sp) => { sp.m.rotation.set(Math.sin(t * 0.6 + sp.ph) * 0.35 - 0.35, 0, Math.cos(t * 0.5 + sp.ph) * 0.45); });
+    if (this.colorLights) {
+      const cx = this.camLook ? this.camLook.x : 0;
+      this.colorLights[0].position.set(cx + Math.sin(t * 0.9) * 18, 10, Math.cos(t * 0.7) * L.width * 0.5);
+      this.colorLights[1].position.set(cx + Math.cos(t * 0.8) * 18, 10, Math.sin(t * 0.6) * L.width * 0.5);
+    }
+    if (this.smoke) {
+      const a = this.smoke.geometry.attributes.position;
+      for (let i = 0; i < this.smokeSeed.length; i++) {
+        const sd = this.smokeSeed[i];
+        a.array[i * 3] = sd.x + Math.sin(t * 0.15 * sd.sp + sd.ph) * 4;
+        a.array[i * 3 + 1] = sd.y + Math.sin(t * 0.4 * sd.sp + sd.ph) * 0.4;
+      }
+      a.needsUpdate = true;
+    }
+    this.ledT += dt;
+    if (this.ledT > 0.1) { this.ledT = 0; this._drawLed(t); }
+  }
+
+  _arch(x, text, bg, neon = '#FF1E3C') {
     const L = this.layout; const s = this.scene;
     const g = new THREE.Group();
     const half = L.width / 2 + 1.2;
-    const postMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4, metalness: 0.2 });
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.3, metalness: 0.8, emissive: new THREE.Color(neon), emissiveIntensity: 0.35 });
     [1, -1].forEach((sd) => {
       const post = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 8, 12), postMat);
       post.position.set(x, 4, sd * half); post.castShadow = this.high; g.add(post);
@@ -224,9 +350,9 @@ export class Race3D {
     const span = half * 2 + 0.8;
     const frame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.1, span), postMat);
     frame.position.set(x, 8.2, 0); g.add(frame);
-    const tex = bannerTex(text, bg, '#FFFFFF', text === 'FINISH');
+    const tex = bannerTex(text, bg, neon, text === 'FINISH');
     [-1, 1].forEach((sd) => {
-      const face = new THREE.Mesh(new THREE.PlaneGeometry(span - 0.2, 1.8), new THREE.MeshStandardMaterial({ map: tex, emissive: 0x222222 }));
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(span - 0.2, 1.8), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
       face.rotation.y = sd * Math.PI / 2;
       face.position.set(x + sd * 0.26, 8.2, 0);
       g.add(face);
@@ -238,8 +364,8 @@ export class Race3D {
   _stands(x0, x1) {
     const L = this.layout; const s = this.scene;
     const steps = 6; const stepH = 0.9; const stepD = 1.6;
-    const standMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.6 });
+    const standMat = new THREE.MeshStandardMaterial({ color: 0x17141f, roughness: 0.8 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x0b0b10, roughness: 0.4, metalness: 0.6, emissive: 0xff1e3c, emissiveIntensity: 0.25 });
     const len = x1 - x0;
     const spacing = this.high ? 0.95 : 1.4;
     const perRow = Math.floor(len / spacing);
@@ -249,7 +375,7 @@ export class Race3D {
     const headGeo = new THREE.SphereGeometry(0.22, 8, 6);
     const heads = new THREE.InstancedMesh(headGeo, new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.9 }), total);
     const col = new THREE.Color();
-    const SHIRTS = [0xef4444, 0x3b82f6, 0xfacc15, 0x22c55e, 0xa855f7, 0xf97316, 0xffffff, 0x0ea5e9, 0xec4899];
+    const SHIRTS = [0x111111, 0x1f1f1f, 0x7f1d1d, 0x111111, 0x4c1d95, 0x222222, 0xb91c1c, 0x111111, 0x6d28d9];
     const SKIN = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xffdbac];
     this.crowdBase = [];
     let k = 0;
@@ -282,8 +408,8 @@ export class Race3D {
 
   _lightTowers(x0, x1) {
     const L = this.layout; const s = this.scene;
-    const mat = new THREE.MeshStandardMaterial({ color: 0x334155 });
-    const lamp = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff7d6, emissiveIntensity: 2 });
+    const mat = new THREE.MeshStandardMaterial({ color: 0x2a2a33, metalness: 0.9, roughness: 0.3 });
+    const lamp = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 3 });
     [x0 + 10, (x0 + x1) / 2, x1 - 10].forEach((x) => [-1].forEach((sd) => {
       const z = sd * (L.width / 2 + 17);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 22, 8), mat);
@@ -296,9 +422,11 @@ export class Race3D {
   _initDucks() {
     const n = this.n;
     const geos = duckGeometries(this.high && n <= 600);
-    const yellow = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.0, emissive: 0x5a4000, emissiveIntensity: 0.7 });
+    const yellow = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.0, emissive: 0x8a6400, emissiveIntensity: 0.85 });
+    const leather = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.32, metalness: 0.35 });
     const orange = new THREE.MeshStandardMaterial({ color: 0xff8c1a, roughness: 0.45 });
-    const black = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
+    const black = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.12, metalness: 0.6 });
+    const boots = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.25, metalness: 0.4 });
     const mk = (geo, mat, shadow) => {
       const m = new THREE.InstancedMesh(geo, mat, n);
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -308,19 +436,22 @@ export class Race3D {
       return m;
     };
     this.parts = {
-      torso: mk(geos.torso, yellow, true), beak: mk(geos.beak, orange, false), eyes: mk(geos.eyes, black, false),
-      wingL: mk(geos.wingL, yellow, false), wingR: mk(geos.wingR, yellow, false),
-      legL: mk(geos.legL, orange, true), legR: mk(geos.legR, orange, true),
-      strap: mk(geos.strap, new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }), false),
-      lens: mk(geos.lens, new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.08, metalness: 0.3, emissive: 0x0c4a6e, emissiveIntensity: 0.5 }), false),
-      bib: mk(geos.bib, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }), false),
+      head: mk(geos.head, yellow, true), jacket: mk(geos.jacket, leather, true), beak: mk(geos.beak, orange, false),
+      mohawk: mk(geos.mohawk, new THREE.MeshStandardMaterial({ color: 0xff1e3c, emissive: 0x8a0010, emissiveIntensity: 0.6, roughness: 0.5 }), false),
+      shades: mk(geos.shades, black, false),
+      wingL: mk(geos.wingL, leather, false), wingR: mk(geos.wingR, leather, false),
+      legL: mk(geos.legL, boots, true), legR: mk(geos.legR, boots, true),
+      tee: mk(geos.tee, new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.8 }), false),
+      guitar: mk(geos.guitar, new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.2, metalness: 0.4, emissive: 0x3a0008 }), false),
     };
+    this.JACKET = new THREE.Color(0x15151a);
     const c = new THREE.Color();
     this.baseColors = [];
     for (let i = 0; i < n; i++) {
       c.setHSL(0.14 + (Math.random() - 0.5) * 0.02, 1, 0.6 + Math.random() * 0.05);
       this.baseColors.push(c.clone());
-      this.parts.torso.setColorAt(i, c); this.parts.wingL.setColorAt(i, c); this.parts.wingR.setColorAt(i, c);
+      this.parts.head.setColorAt(i, c);
+      this.parts.jacket.setColorAt(i, this.JACKET); this.parts.wingL.setColorAt(i, this.JACKET); this.parts.wingR.setColorAt(i, this.JACKET);
     }
     this.x = new Float32Array(n);
     this.prevX = new Float32Array(n);
@@ -388,9 +519,9 @@ export class Race3D {
   markWinner(i, rank) {
     this.winnerSet.set(i, rank);
     this._badge(i, true);
-    const gold = new THREE.Color(0xffd23f);
-    this.parts.torso.setColorAt(i, gold); this.parts.wingL.setColorAt(i, gold); this.parts.wingR.setColorAt(i, gold);
-    ['torso', 'wingL', 'wingR'].forEach((k) => { this.parts[k].instanceColor.needsUpdate = true; });
+    const gold = new THREE.Color(0xffc83d);
+    this.parts.jacket.setColorAt(i, gold); this.parts.wingL.setColorAt(i, gold); this.parts.wingR.setColorAt(i, gold);
+    ['jacket', 'wingL', 'wingR'].forEach((k) => { this.parts[k].instanceColor.needsUpdate = true; });
     this.focusIdx = i;
     this.spot.intensity = 400;
   }
@@ -452,8 +583,8 @@ export class Race3D {
       e.set(sway, cele ? Math.sin(this.clock * 2 + i) * 0.4 : Math.sin(ph * 0.5) * 0.05, lean);
       q.setFromEuler(e);
       base.compose(v.set(this.x[i], bob, pos.z), q, s);
-      P.torso.setMatrixAt(i, base); P.beak.setMatrixAt(i, base); P.eyes.setMatrixAt(i, base);
-      P.strap.setMatrixAt(i, base); P.lens.setMatrixAt(i, base); P.bib.setMatrixAt(i, base);
+      P.head.setMatrixAt(i, base); P.jacket.setMatrixAt(i, base); P.beak.setMatrixAt(i, base); P.mohawk.setMatrixAt(i, base);
+      P.shades.setMatrixAt(i, base); P.tee.setMatrixAt(i, base); P.guitar.setMatrixAt(i, base);
       const flap = (moving > 0.05 ? Math.sin(ph * 2) * 0.7 : (cele ? Math.sin(ph * 2.5) * 1.1 : Math.sin(ph) * 0.08)) + 0.15;
       part.makeRotationX(flap); m.multiplyMatrices(base, this.wingPivotL).multiply(part); P.wingL.setMatrixAt(i, m);
       part.makeRotationX(-flap); m.multiplyMatrices(base, this.wingPivotR).multiply(part); P.wingR.setMatrixAt(i, m);
@@ -465,7 +596,7 @@ export class Race3D {
       if (b) {
         b.ring.position.set(this.x[i], 0.04, pos.z);
         b.ring.scale.setScalar(1 + Math.sin(this.clock * 4) * 0.1);
-        if (b.crown) { b.crown.position.set(this.x[i] + 0.45, bob + 1.5, pos.z); b.crown.rotation.y = this.clock * 1.5; }
+        if (b.crown) { b.crown.position.set(this.x[i] + 0.35, bob + 1.85, pos.z); b.crown.rotation.y = this.clock * 1.5; }
         if (b.beam) b.beam.position.set(this.x[i], 7, pos.z);
       }
     }
@@ -534,6 +665,7 @@ export class Race3D {
     this._writeDucks(dt);
     if (this.high || ((this.clock * 30) | 0) % 2 === 0) this._updateCrowd(dt);
     this._updateCamera(dt);
+    this._animateShow(dt);
     this.renderer.render(this.scene, this.camera);
   }
 

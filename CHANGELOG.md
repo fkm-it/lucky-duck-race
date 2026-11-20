@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.0 — 2026-11-20 — ROCK THE DRAW
+- Jenama baharu **ROCK THE DRAW — "LET'S ROCK. LET'S WIN!"**: logo emas metalik + neon merah, ikon aplikasi baharu.
+- Maskot rasmi **Rockstar Duck** (imej daripada pengguna) + 4 variasi vektor: bergitar, berlari, memegang trofi, thumbs up.
+- Tema konsert gelap untuk semua modul: hitam matte, neon merah, ungu elektrik, emas metalik; latar dinding LED, lampu sorot, laser & asap (CSS).
+- Perlumbaan 3D: itik rockstar (mohawk merah, cermin mata hitam, jaket kulit, but, gitar), trek hitam bergaris neon, dinding LED beranimasi, laser, kon lampu sorot, asap pentas, lampu berwarna bergerak; jaket EMAS untuk pemenang.
+- Mod 2D konsert, kiraan detik dengan maskot berlari, skrin TAHNIAH dengan maskot trofi.
+- Bunyi: kord gitar elektrik terherot, muzik rock (dram + riff), riff kemenangan.
+- Fon Bebas Neue & Inter disertakan (luar talian). Struktur data & logik cabutan TIDAK berubah.
+
 ## 1.2.1 — 2026-11-20
 - Semakan bahasa: istilah & ayat Bahasa Melayu Malaysia di seluruh sistem (No. Pekerja, Panel Pentadbir, Laporan & Eksport, Imbas Kod QR, Set semula, komputer).
 - Kategori hadiah dalam BM: Hadiah Utama / Pertama / Kedua / Ketiga / Sagu Hati / Istimewa (kategori lama dipetakan automatik).

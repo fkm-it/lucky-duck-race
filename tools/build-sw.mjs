@@ -9,7 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const INCLUDE = ['index.html', 'checkin.html', 'manifest.webmanifest', 'css', 'js', 'vendor', 'icons'];
+const INCLUDE = ['index.html', 'checkin.html', 'manifest.webmanifest', 'css', 'fonts', 'js', 'vendor', 'icons'];
 const files = [];
 const walk = (p) => {
   const abs = path.join(ROOT, p);
