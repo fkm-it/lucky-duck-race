@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="mb" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="#FFF6A8"/><stop offset=".45" stop-color="#FFD43B"/><stop offset="1" stop-color="#F2A700"/></radialGradient>
+    <radialGradient id="mh" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="#FFF6A8"/><stop offset=".5" stop-color="#FFD43B"/><stop offset="1" stop-color="#F0A500"/></radialGradient>
+    <linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFA23A"/><stop offset="1" stop-color="#F06A00"/></linearGradient>
+    <radialGradient id="ml" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#A5F3FC"/><stop offset=".55" stop-color="#22A6F2"/><stop offset="1" stop-color="#0B4FA8"/></radialGradient>
+    <linearGradient id="ms" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E11D48"/><stop offset="1" stop-color="#9F1239"/></linearGradient>
+  </defs>
+  <!-- skaf berkibar -->
+  <path d="M120 255 C80 250 50 270 18 262 C40 285 72 290 96 286 C70 300 52 318 30 322 C70 330 104 310 132 290 Z" fill="url(#ms)"/>
+  <!-- badan -->
+  <ellipse cx="205" cy="285" rx="135" ry="95" fill="url(#mb)"/>
+  <path d="M80 250 C60 205 85 190 110 215" fill="#FFD43B"/>
+  <!-- sayap -->
+  <path d="M150 270 C170 235 245 240 255 285 C235 315 175 318 150 270 Z" fill="#F7B500" opacity=".9"/>
+  <!-- skaf leher -->
+  <path d="M122 245 C170 270 250 268 292 236 L300 262 C250 296 165 300 116 270 Z" fill="url(#ms)"/>
+  <!-- kepala -->
+  <circle cx="225" cy="150" r="98" fill="url(#mh)"/>
+  <!-- paruh -->
+  <path d="M268 178 C320 160 372 172 380 192 C372 214 318 222 270 210 Z" fill="url(#mk)"/>
+  <path d="M272 198 C318 200 352 200 376 194 C360 216 312 222 272 210 Z" fill="#D95500"/>
+  <!-- tali goggle -->
+  <path d="M132 122 C170 98 280 92 318 112 L318 138 C280 118 170 124 134 148 Z" fill="#1E293B"/>
+  <!-- goggle -->
+  <g stroke="#E2E8F0" stroke-width="9">
+    <ellipse cx="208" cy="128" rx="40" ry="34" fill="url(#ml)"/>
+    <ellipse cx="282" cy="124" rx="36" ry="32" fill="url(#ml)"/>
+  </g>
+  <rect x="244" y="118" width="12" height="14" rx="4" fill="#E2E8F0"/>
+  <ellipse cx="196" cy="114" rx="12" ry="8" fill="#fff" opacity=".85"/>
+  <ellipse cx="271" cy="111" rx="10" ry="7" fill="#fff" opacity=".85"/>
+  <!-- pipi -->
+  <ellipse cx="246" cy="190" rx="16" ry="9" fill="#FF8A65" opacity=".45"/>
+  <!-- jambul -->
+  <path d="M206 56 C200 28 222 22 228 50 C236 30 256 34 246 60 Z" fill="#FFD43B"/>
+</svg>

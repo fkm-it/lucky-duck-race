@@ -1,6 +1,7 @@
 import { html, mount, toast, errMsg, fmtNum, $ } from '../util.js';
 import * as store from '../store.js';
 import { openStage } from '../race.js';
+import { icon } from '../icons.js';
 
 export async function render(el, ctx) {
   const params = new URLSearchParams(location.hash.split('?')[1] || '');
@@ -16,6 +17,7 @@ export async function render(el, ctx) {
   const maxFor = () => Math.min(pool.length, cur() ? cur().remaining : pool.length);
 
   mount(el, html`
+    <div class="tabs"><a class="tab on" href="#/draw">Mula Cabutan</a><a class="tab" href="#/prizes">Urus Hadiah</a></div>
     <div class="grid-2 draw-grid">
       <section class="card">
         <div class="card-head"><h3>Konfigurasi cabutan</h3></div>
@@ -34,7 +36,7 @@ export async function render(el, ctx) {
           </fieldset>
         </div>
         <div id="d-warn"></div>
-        <button class="btn btn-go btn-lg btn-block" id="d-open" ${pool.length ? '' : 'disabled'}>🏁 Buka Pentas Perlumbaan (skrin penuh)</button>
+        <button class="btn btn-red btn-lg btn-block" id="d-open" ${pool.length ? '' : 'disabled'}>${icon('play')} MULA CABUTAN — buka pentas perlumbaan</button>
         <p class="tiny muted">Pemenang dipilih secara rawak kriptografi (Web Crypto) sebaik anda menekan <b>MULA</b> pada pentas, disimpan serta-merta,
           dan dibuang daripada kumpulan layak${settings.allowMultipleWins ? html` — <b>KECUALI</b>: tetapan "benarkan menang berulang" sedang AKTIF` : ''}. Animasi hanya memaparkan keputusan tersebut.</p>
       </section>

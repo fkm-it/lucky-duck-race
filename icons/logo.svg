@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 0 660 250">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF3A3"/><stop offset=".5" stop-color="#FFD23F"/><stop offset="1" stop-color="#F59E0B"/></linearGradient>
+    <pattern id="ck" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><rect width="10" height="10" fill="#111"/><rect x="10" y="10" width="10" height="10" fill="#111"/></pattern>
+  </defs>
+  <!-- bendera petak -->
+  <g transform="translate(500 0) rotate(16)">
+    <rect x="0" y="0" width="7" height="110" rx="3" fill="#64748B"/>
+    <path d="M7 4 C40 -6 70 18 110 6 L110 66 C70 78 40 54 7 64 Z" fill="url(#ck)" stroke="#111" stroke-width="3"/>
+  </g>
+  <g font-family="'Arial Black','Segoe UI Black',Impact,system-ui,sans-serif" font-weight="900" font-style="italic" text-anchor="middle">
+    <text x="300" y="112" font-size="108" fill="#2E1065" stroke="#2E1065" stroke-width="24" stroke-linejoin="round" transform="rotate(-4 300 112)">LUCKY</text>
+    <text x="300" y="112" font-size="108" fill="url(#lg)" stroke="#7C2D12" stroke-width="5" stroke-linejoin="round" transform="rotate(-4 300 112)">LUCKY</text>
+    <text x="315" y="222" font-size="100" fill="#2E1065" stroke="#2E1065" stroke-width="24" stroke-linejoin="round" transform="rotate(-4 315 222)">DUCK RACE</text>
+    <text x="315" y="222" font-size="100" fill="url(#lg)" stroke="#7C2D12" stroke-width="5" stroke-linejoin="round" transform="rotate(-4 315 222)">DUCK RACE</text>
+  </g>
+</svg>

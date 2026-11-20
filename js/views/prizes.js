@@ -12,6 +12,7 @@ export async function render(el, ctx) {
     const total = ps.reduce((s, x) => s + x.prize.quantity, 0);
     const awarded = ps.reduce((s, x) => s + x.awarded, 0);
     mount(el, html`
+      <div class="tabs"><a class="tab" href="#/draw">Mula Cabutan</a><a class="tab on" href="#/prizes">Urus Hadiah</a></div>
       <div class="toolbar">
         <div><b>${ps.length}</b> kategori · Jumlah pemenang diperlukan <b>${fmtNum(total)}</b> · Sudah dicabut <b>${fmtNum(awarded)}</b></div>
         <div class="spacer"></div>

@@ -49,7 +49,14 @@ function duckGeometries(detail) {
     { geo: new THREE.CylinderGeometry(0.05, 0.05, 0.32, 6), m: M(0, -0.16, 0) },
     { geo: new THREE.BoxGeometry(0.3, 0.05, 0.22), m: M(0.1, -0.32, 0) },
   ]);
-  return { torso, beak, eyes, wingL, wingR, legL: leg, legR: leg.clone() };
+  // Goggle: tali gelap mengelilingi kepala + 2 kanta biru; bib putih di dada
+  const strap = merge([{ geo: new THREE.TorusGeometry(0.335, 0.04, 6, 24), m: M(0.44, 1.2, 0, 1, 1, 1, Math.PI / 2 - 0.12, 0, 0.18) }]);
+  const lens = merge([
+    { geo: new THREE.SphereGeometry(0.115, 12, 8), m: M(0.68, 1.25, 0.15, 0.55, 1, 1) },
+    { geo: new THREE.SphereGeometry(0.115, 12, 8), m: M(0.68, 1.25, -0.15, 0.55, 1, 1) },
+  ]);
+  const bib = merge([{ geo: new THREE.BoxGeometry(0.06, 0.34, 0.42), m: M(0.58, 0.62, 0, 1, 1, 1, 0, 0, -0.25) }]);
+  return { torso, beak, eyes, wingL, wingR, legL: leg, legR: leg.clone(), strap, lens, bib };
 }
 
 function canvasTex(w, h, draw) {
@@ -62,11 +69,16 @@ function canvasTex(w, h, draw) {
   return t;
 }
 
-function bannerTex(text, bg, fg) {
+function bannerTex(text, bg, fg, checker = false) {
   return canvasTex(1024, 192, (g, w, h) => {
     const grd = g.createLinearGradient(0, 0, 0, h);
     grd.addColorStop(0, bg[0]); grd.addColorStop(1, bg[1]);
     g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    if (checker) {
+      const c = 32;
+      for (let y = 0; y < h; y += c) for (let x = 0; x < w; x += c) if (((x + y) / c) % 2) { g.fillStyle = '#111'; g.fillRect(x, y, c, c); } else { g.fillStyle = '#fff'; g.fillRect(x, y, c, c); }
+      g.fillStyle = bg[0]; g.fillRect(w * 0.2, 14, w * 0.6, h - 28);
+    }
     g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(0, 8, w, 6); g.fillRect(0, h - 14, w, 6);
     g.fillStyle = fg; g.font = '900 120px system-ui, Arial Black, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -74,7 +86,7 @@ function bannerTex(text, bg, fg) {
   });
 }
 
-const LANE_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+const LANE_COLORS = ['#7C3AED', '#DB2777', '#9333EA', '#2563EB', '#C026D3', '#4F46E5', '#A21CAF', '#6D28D9'];
 
 // ----------------------------------------------------------------------------- Pemapar
 
@@ -193,8 +205,8 @@ export class Race3D {
     const fin = new THREE.Mesh(new THREE.PlaneGeometry(1.4, L.width), new THREE.MeshBasicMaterial({ map: checker }));
     fin.rotation.x = -Math.PI / 2; fin.position.set(L.finishX + 0.7, 0.025, 0); s.add(fin);
 
-    this._arch(0, 'START', ['#16A34A', '#065F46']);
-    this.finishArch = this._arch(L.finishX + 0.7, 'FINISH', ['#DC2626', '#7F1D1D']);
+    this._arch(0, 'START', ['#7C3AED', '#4C1D95']);
+    this.finishArch = this._arch(L.finishX + 0.7, 'FINISH', ['#DB2777', '#9D174D']);
 
     this._stands(x0, x1);
     this._lightTowers(x0, x1);
@@ -212,7 +224,7 @@ export class Race3D {
     const span = half * 2 + 0.8;
     const frame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.1, span), postMat);
     frame.position.set(x, 8.2, 0); g.add(frame);
-    const tex = bannerTex(text, bg, '#FFFFFF');
+    const tex = bannerTex(text, bg, '#FFFFFF', text === 'FINISH');
     [-1, 1].forEach((sd) => {
       const face = new THREE.Mesh(new THREE.PlaneGeometry(span - 0.2, 1.8), new THREE.MeshStandardMaterial({ map: tex, emissive: 0x222222 }));
       face.rotation.y = sd * Math.PI / 2;
@@ -284,7 +296,7 @@ export class Race3D {
   _initDucks() {
     const n = this.n;
     const geos = duckGeometries(this.high && n <= 600);
-    const yellow = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.0, emissive: 0x3a2a00, emissiveIntensity: 0.6 });
+    const yellow = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.0, emissive: 0x5a4000, emissiveIntensity: 0.7 });
     const orange = new THREE.MeshStandardMaterial({ color: 0xff8c1a, roughness: 0.45 });
     const black = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 });
     const mk = (geo, mat, shadow) => {
@@ -299,11 +311,14 @@ export class Race3D {
       torso: mk(geos.torso, yellow, true), beak: mk(geos.beak, orange, false), eyes: mk(geos.eyes, black, false),
       wingL: mk(geos.wingL, yellow, false), wingR: mk(geos.wingR, yellow, false),
       legL: mk(geos.legL, orange, true), legR: mk(geos.legR, orange, true),
+      strap: mk(geos.strap, new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }), false),
+      lens: mk(geos.lens, new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.08, metalness: 0.3, emissive: 0x0c4a6e, emissiveIntensity: 0.5 }), false),
+      bib: mk(geos.bib, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7 }), false),
     };
     const c = new THREE.Color();
     this.baseColors = [];
     for (let i = 0; i < n; i++) {
-      c.setHSL(0.135 + (Math.random() - 0.5) * 0.02, 1, 0.55 + Math.random() * 0.06);
+      c.setHSL(0.14 + (Math.random() - 0.5) * 0.02, 1, 0.6 + Math.random() * 0.05);
       this.baseColors.push(c.clone());
       this.parts.torso.setColorAt(i, c); this.parts.wingL.setColorAt(i, c); this.parts.wingR.setColorAt(i, c);
     }
@@ -438,6 +453,7 @@ export class Race3D {
       q.setFromEuler(e);
       base.compose(v.set(this.x[i], bob, pos.z), q, s);
       P.torso.setMatrixAt(i, base); P.beak.setMatrixAt(i, base); P.eyes.setMatrixAt(i, base);
+      P.strap.setMatrixAt(i, base); P.lens.setMatrixAt(i, base); P.bib.setMatrixAt(i, base);
       const flap = (moving > 0.05 ? Math.sin(ph * 2) * 0.7 : (cele ? Math.sin(ph * 2.5) * 1.1 : Math.sin(ph) * 0.08)) + 0.15;
       part.makeRotationX(flap); m.multiplyMatrices(base, this.wingPivotL).multiply(part); P.wingL.setMatrixAt(i, m);
       part.makeRotationX(-flap); m.multiplyMatrices(base, this.wingPivotR).multiply(part); P.wingR.setMatrixAt(i, m);

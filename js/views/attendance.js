@@ -1,6 +1,7 @@
 import { html, raw, mount, toast, errMsg, confirmDialog, debounce, fmtNum, fmtTime, $ } from '../util.js';
 import * as store from '../store.js';
 import * as att from '../attendance.js';
+import { icon } from '../icons.js';
 
 const PAGE = 50;
 
@@ -26,8 +27,8 @@ export async function render(el, ctx) {
         <div class="card-head"><h3>Kod QR pendaftaran</h3></div>
         <div class="qr-box" id="a-qr"></div>
         <div class="row-actions">
-          <button class="btn btn-primary btn-sm" id="a-qr-full">⛶ Papar skrin penuh</button>
-          <button class="btn btn-ghost btn-sm" id="a-qr-print">🖨 Cetak poster</button>
+          <button class="btn btn-purple btn-sm" id="a-qr-full">${icon('expand')} Papar di meja pendaftaran</button>
+          <button class="btn btn-ghost btn-sm" id="a-qr-print">${icon('print')} Cetak poster</button>
           <button class="btn btn-ghost btn-sm" id="a-copy">⧉ Salin pautan</button>
           <a class="btn btn-ghost btn-sm" id="a-open-link" target="_blank" rel="noopener">↗ Buka</a>
         </div>
@@ -40,7 +41,7 @@ export async function render(el, ctx) {
         <input type="search" id="a-q" placeholder="Cari nama / No. pekerja…" aria-label="Cari">
         <select id="a-f" aria-label="Status"><option value="">Semua staf</option><option value="in">Hadir</option><option value="out">Belum hadir</option></select>
         <div class="spacer"></div>
-        <a class="btn btn-primary btn-sm" href="#/import?target=attendance">⇪ Muat naik senarai staf</a>
+        <a class="btn btn-purple btn-sm" href="#/staff?target=attendance">${icon('upload')} Muat naik senarai staf</a>
       </div>
       <div class="table-wrap"><table class="tbl" id="a-tbl"></table></div>
       <div class="pager pad" id="a-pager"></div>
@@ -92,7 +93,7 @@ export async function render(el, ctx) {
         <td class="row-act">${r.checked_in_at
           ? html`<button class="btn btn-ghost btn-sm" data-out="${r.staff_id}">Batal</button>`
           : html`<button class="btn btn-go btn-sm" data-in="${r.staff_id}">✔ Sahkan</button>`}</td></tr>`)
-        : html`<tr><td colspan="5" class="empty-cell">${st.rows.length ? 'Tiada padanan.' : html`Belum ada senarai staf. <a href="#/import?target=attendance">Muat naik Excel</a>.`}</td></tr>`}</tbody>`);
+        : html`<tr><td colspan="5" class="empty-cell">${st.rows.length ? 'Tiada padanan.' : html`Belum ada senarai staf. <a href="#/staff?target=attendance">Muat naik Excel</a>.`}</td></tr>`}</tbody>`);
     mount($('#a-pager'), html`<span class="muted">${fmtNum(rows.length)} staf</span><div class="spacer"></div>
       <button class="btn btn-ghost btn-sm" data-pg="-1" ${st.page === 0 ? 'disabled' : ''}>‹</button><span>${st.page + 1} / ${pages}</span>
       <button class="btn btn-ghost btn-sm" data-pg="1" ${st.page >= pages - 1 ? 'disabled' : ''}>›</button>`);
@@ -162,7 +163,7 @@ async function renderSetup(el, ctx) {
   const s = await store.getSettings();
   mount(el, html`
     <section class="card setup-card">
-      <div class="setup-ic">📲</div>
+      <img class="setup-mascot" src="icons/mascot.svg" alt="">
       <h2>Pendaftaran kehadiran dengan kod QR</h2>
       <ol class="setup-steps">
         <li>Muat naik <b>senarai semua staf</b> (No. Pekerja, Nama, Jabatan) ke pelayan kehadiran.</li>
@@ -181,22 +182,26 @@ async function renderSetup(el, ctx) {
       await att.createEvent($('#s-name').value);
       toast('Majlis dalam talian dicipta. Seterusnya: muat naik senarai staf.', 'success', 5000);
       att.startAutoSync();
-      ctx.go('import?target=attendance');
+      ctx.go('staff?target=attendance');
     } catch (err) { toast(errMsg(err), 'error', 6000); e.target.disabled = false; }
   });
 }
 
-function showQrFullscreen(cfg, url) {
+export function showQrFullscreen(cfg, url) {
   const wrap = document.createElement('div');
   wrap.className = 'qr-full';
   att.qrSvg(url).then((svg) => {
     mount(wrap, html`
-      <div class="qf-title">🦆 LUCKY DUCK RACE</div>
-      <div class="qf-event">${cfg.eventName}</div>
-      <div class="qf-code">${raw(svg)}</div>
-      <div class="qf-cta">IMBAS UNTUK SAHKAN KEHADIRAN</div>
-      <div class="qf-sub">Masukkan No. Pekerja anda → Sahkan → anda layak untuk cabutan bertuah!</div>
-      <div class="qf-count" id="qf-count"></div>
+      <div class="standee">
+        <img class="sd-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+        <div class="sd-head">Pendaftaran Kehadiran Staf</div>
+        <div class="sd-event">${cfg.eventName}</div>
+        <div class="sd-code">${raw(svg)}</div>
+        <div class="sd-cta">Sila imbas QR Code ini<br>untuk sahkan kehadiran</div>
+        <div class="sd-count" id="qf-count"></div>
+        <div class="sd-check" aria-hidden="true"></div>
+        <img class="sd-mascot" src="icons/mascot.svg" alt="">
+      </div>
       <button class="sbtn qf-close" aria-label="Tutup">✕</button>`);
     document.body.appendChild(wrap);
     if (wrap.requestFullscreen) wrap.requestFullscreen().catch(() => {});
@@ -224,13 +229,15 @@ function showQrFullscreen(cfg, url) {
 async function printQr(cfg, url) {
   const svg = await att.qrSvg(url);
   const root = document.getElementById('print-root');
-  mount(root, html`<div class="qr-poster">
-    <div class="qp-title">🦆 LUCKY DUCK RACE</div>
-    <div class="qp-event">${cfg.eventName}</div>
-    <div class="qp-code">${raw(svg)}</div>
-    <div class="qp-cta">IMBAS UNTUK SAHKAN KEHADIRAN</div>
-    <ol class="qp-steps"><li>Imbas kod QR dengan kamera telefon</li><li>Masukkan No. Pekerja</li><li>Semak maklumat & tekan <b>Sahkan Kehadiran</b></li></ol>
-    <div class="qp-foot">Staf yang hadir akan disenaraikan secara automatik untuk cabutan bertuah.</div>
+  mount(root, html`<div class="qr-poster standee">
+    <img class="sd-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+    <div class="sd-head">Pendaftaran Kehadiran Staf</div>
+    <div class="sd-event">${cfg.eventName}</div>
+    <div class="sd-code">${raw(svg)}</div>
+    <div class="sd-cta">Sila imbas QR Code ini<br>untuk sahkan kehadiran</div>
+    <ol class="qp-steps"><li>Imbas kod QR dengan kamera telefon</li><li>Masukkan No. Pekerja</li><li>Semak maklumat &amp; tekan <b>Sahkan Kehadiran</b></li></ol>
+    <div class="sd-check" aria-hidden="true"></div>
+    <img class="sd-mascot" src="icons/mascot.svg" alt="">
   </div>`);
   document.body.classList.add('printing', 'printing-poster');
   const done = () => { document.body.classList.remove('printing', 'printing-poster'); root.innerHTML = ''; window.removeEventListener('afterprint', done); };

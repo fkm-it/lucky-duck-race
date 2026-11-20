@@ -11,6 +11,7 @@ import * as sfx from './audio.js';
 import { planRace } from './logic.js';
 import { Fx } from './fx.js';
 import { Race2D } from './race2d.js';
+import { icon } from './icons.js';
 
 let Race3DClass = null;
 async function rendererFor(mode, host, count, quality) {
@@ -53,15 +54,10 @@ export async function openStage(o) {
     <canvas class="stage-fx" id="stg-fx"></canvas>
     <div class="stage-labels" id="stg-labels" aria-hidden="true"></div>
     <header class="stage-top">
-      <div class="brand-block">
-        <div class="brand-title">LUCKY DUCK RACE</div>
-        <div class="brand-sub">${st.subtitle}</div>
+      <div class="stage-title">
+        <img class="st-logo" src="icons/logo.svg" alt="Lucky Duck Race">
+        <div class="st-ribbon">CABUTAN BERTUAH</div>
         ${st.eventName ? html`<div class="brand-event">${st.eventName}</div>` : ''}
-      </div>
-      <div class="prize-pill">
-        <span class="pp-cat">${prizeCat}</span>
-        <span class="pp-name">${prizeLabel}</span>
-        <span class="pp-meta">${fmtNum(count)} pemenang · ${fmtNum(pool.length)} itik</span>
       </div>
     </header>
     <aside class="leaderboard" id="stg-lead" hidden>
@@ -69,14 +65,19 @@ export async function openStage(o) {
     </aside>
     <div class="countdown" id="stg-count" aria-live="assertive"></div>
     <div class="stage-hint" id="stg-hint">
-      ${replay ? html`<b>MAIN SEMULA</b> · Keputusan cabutan ${replay.draw.id} (tiada pemilihan baharu)` : html`Semua itik di garisan permulaan. Pemenang akan dipilih secara rawak (kriptografi) sebaik MULA ditekan.`}
+      ${replay ? html`<b>MAIN SEMULA</b> · Keputusan cabutan ${replay.draw.id} (tiada pemilihan baharu)` : html`Semua itik di garisan permulaan. Pemenang dipilih secara rawak (kriptografi) sebaik <b>MULA CABUTAN</b> ditekan.`}
     </div>
     <div class="finish-strip" id="stg-strip"></div>
-    <div class="stage-controls">
-      <button class="sbtn sbtn-go" id="stg-start">▶ MULA</button>
-      <button class="sbtn" id="stg-fs" title="Skrin penuh (F)">⛶</button>
-      <button class="sbtn" id="stg-snd" title="Bunyi (M)">${st.soundEnabled ? '🔊' : '🔇'}</button>
-      <button class="sbtn" id="stg-close" title="Tutup (Esc)">✕</button>
+    <div class="hud">
+      <div class="hud-cell">${icon('users')}<div><span>Peserta Aktif</span><b>${fmtNum(pool.length)}</b></div></div>
+      <div class="hud-cell">${icon('trophy')}<div><span>Bil. Pemenang</span><b>${fmtNum(count)}</b></div></div>
+      <div class="hud-cell hud-prize"><div><span>Kategori Hadiah</span><b>${prizeCat}${prizeLabel !== prizeCat ? ' — ' + prizeLabel : ''}</b></div></div>
+      <button class="hud-go" id="stg-start">${icon('play')} MULA CABUTAN</button>
+      <div class="hud-tools">
+        <button class="sbtn" id="stg-fs" title="Skrin penuh (F)">${icon('expand')}</button>
+        <button class="sbtn" id="stg-snd" title="Bunyi (M)">${icon(st.soundEnabled ? 'sound' : 'mute')}</button>
+        <button class="sbtn" id="stg-close" title="Tutup (Esc)">${icon('x')}</button>
+      </div>
     </div>
     <div class="announce" id="stg-ann" hidden></div>
     <div class="integrity" id="stg-int"></div>
@@ -232,16 +233,32 @@ export async function openStage(o) {
     });
   }
 
-  function winnerCard(w, big) {
+  const ribbon = (sub) => html`
+    <div class="tahniah">
+      <div class="th-trophy" aria-hidden="true">🏆</div>
+      <div class="th-ribbon"><span>TAHNIAH!</span></div>
+      <div class="th-sub">${sub}</div>
+    </div>`;
+
+  function winnerCard(w) {
     return html`
-      <div class="win-card ${big ? 'win-card-big' : ''}">
-        <div class="wc-trophy">🏆</div>
-        <div class="wc-no">WINNER #${w.winnerNo}</div>
+      <div class="win-card win-card-big">
+        <div class="wc-no">PEMENANG #${w.winnerNo} · ${w.prizeName === w.prizeCategory ? w.prizeCategory : w.prizeCategory + ' — ' + w.prizeName} #${w.prizeNumber}</div>
         <div class="wc-name">${w.name}</div>
-        <div class="wc-meta"><span>Staff ID: <b>${w.staffId}</b></span><span>${w.department || '—'}</span></div>
-        <div class="wc-prize">${w.prizeName === w.prizeCategory ? w.prizeCategory : w.prizeCategory + ' · ' + w.prizeName} #${w.prizeNumber}</div>
+        <div class="wc-meta"><span>No. Pekerja: <b>${w.staffId}</b></span><span>${w.department || '—'}</span></div>
         <div class="wc-duck">🦆 Itik #${w.duckNo}</div>
       </div>`;
+  }
+
+  function winnerTable(list) {
+    const per = list.length > 24 ? Math.ceil(list.length / 3) : list.length > 10 ? Math.ceil(list.length / 2) : list.length;
+    const cols = [];
+    for (let i = 0; i < list.length; i += per) cols.push(list.slice(i, i + per));
+    return html`<div class="wt-wrap wt-c${cols.length}">${cols.map((c, ci) => html`
+      <table class="win-table">
+        <thead><tr><th>Bil.</th><th>No. Pekerja</th><th>Nama</th><th>Jabatan</th></tr></thead>
+        <tbody>${c.map((w, i) => html`<tr><td><span class="wt-no">${ci * per + i + 1}</span></td><td class="mono">${w.staffId}</td><td class="wt-name">${w.name}</td><td>${w.department || '—'}</td></tr>`)}</tbody>
+      </table>`)}</div>`;
   }
 
   async function revealOneByOne() {
@@ -259,10 +276,9 @@ export async function openStage(o) {
       if (state.closed) return;
       ann.className = 'announce ann-reveal';
       mount(ann, html`
-        <div class="congrats">CONGRATULATIONS!</div>
-        <div class="congrats-sub">YOU ARE OUR LUCKY WINNER!</div>
-        ${winnerCard(w, true)}
-        <button class="sbtn sbtn-go ann-next" id="ann-next">${i < list.length - 1 ? 'Pemenang seterusnya ▶' : 'Lihat semua pemenang ▶'}</button>`);
+        ${ribbon('PEMENANG CABUTAN BERTUAH')}
+        ${winnerCard(w)}
+        <button class="hud-go ann-next" id="ann-next">${i < list.length - 1 ? 'Pemenang seterusnya ▶' : 'Lihat semua pemenang ▶'}</button>`);
       sfx.victory(); sfx.firework(); sfx.applause(2.5);
       fx.confetti(200); fx.firework(0.2); setTimeout(() => fx.firework(0.8), 350); setTimeout(() => fx.firework(0.5, 0.12), 700);
       await waitNext('#ann-next');
@@ -274,13 +290,12 @@ export async function openStage(o) {
     const ann = root.querySelector('#stg-ann');
     ann.hidden = false;
     const n = state.winners.length;
-    ann.className = 'announce ann-gallery ' + (n === 1 ? 'g-1' : n <= 3 ? 'g-3' : n <= 6 ? 'g-6' : n <= 12 ? 'g-12' : n <= 20 ? 'g-many' : 'g-many g-huge');
+    ann.className = 'announce ann-gallery' + (n > 10 ? ' g-many' : '');
     mount(ann, html`
-      <div class="congrats">CONGRATULATIONS!</div>
-      <div class="congrats-sub">${n === 1 ? 'YOU ARE OUR LUCKY WINNER!' : 'YOU ARE OUR LUCKY WINNERS!'}</div>
+      ${ribbon('PEMENANG CABUTAN BERTUAH')}
       <div class="gallery-prize">${prizeCat}${prizeLabel !== prizeCat ? ' — ' + prizeLabel : ''}</div>
-      <div class="gallery">${state.winners.map((w) => winnerCard(w, n === 1))}</div>
-      <div class="ann-actions"><button class="sbtn sbtn-go" id="ann-done">✔ Selesai</button></div>`);
+      ${winnerTable(state.winners)}
+      <div class="ann-actions"><button class="hud-go" id="ann-done">${icon('check')} Selesai</button></div>`);
     sfx.victory(); sfx.applause(4);
     fx.confetti(320);
     for (let i = 0; i < 6; i++) setTimeout(() => { fx.firework(); sfx.firework(); }, i * 450);
@@ -320,7 +335,7 @@ export async function openStage(o) {
     const cur = await store.getSettings();
     const next = await store.saveSettings({ soundEnabled: !cur.soundEnabled });
     sfx.configure(next);
-    root.querySelector('#stg-snd').textContent = next.soundEnabled ? '🔊' : '🔇';
+    mount(root.querySelector('#stg-snd'), icon(next.soundEnabled ? 'sound' : 'mute'));
     if (next.soundEnabled) { sfx.unlock(); if (state.phase === 'race') { sfx.startMusic(); sfx.startRunning(); } }
     toast(next.soundEnabled ? 'Bunyi dihidupkan' : 'Bunyi dimatikan');
   }

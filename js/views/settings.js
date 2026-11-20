@@ -13,6 +13,8 @@ export async function render(el, ctx) {
         <div class="card-head"><h3>Majlis & paparan</h3></div>
         <div class="form-grid">
           <label class="field span-2"><span>Nama majlis (dipapar di pentas)</span><input id="s-event" maxlength="120" value="${s.eventName}" placeholder="cth. Majlis Makan Malam Tahunan FKM 2026"></label>
+          <label class="field"><span>Tarikh majlis</span><input id="s-date" type="date" value="${s.eventDate}"></label>
+          <label class="field"><span>Lokasi</span><input id="s-loc" maxlength="120" value="${s.eventLocation}" placeholder="cth. Dewan Utama"></label>
           <label class="field span-2"><span>Subtajuk</span><input id="s-sub" maxlength="120" value="${s.subtitle}"></label>
           <label class="field"><span>Mod paparan</span><select id="s-mode">
             <option value="auto" ${s.renderMode === 'auto' ? 'selected' : ''}>Auto (3D jika disokong)</option>
@@ -61,7 +63,7 @@ export async function render(el, ctx) {
     </div>`);
 
   const collect = () => ({
-    eventName: $('#s-event').value, subtitle: $('#s-sub').value, renderMode: $('#s-mode').value, quality: $('#s-q').value,
+    eventName: $('#s-event').value, eventDate: $('#s-date').value, eventLocation: $('#s-loc').value, subtitle: $('#s-sub').value, renderMode: $('#s-mode').value, quality: $('#s-q').value,
     raceDuration: $('#s-dur').value, revealMode: $('#s-rv').value, highlightDuringRace: $('#s-hl').checked, allowMultipleWins: $('#s-multi').checked,
   });
 

@@ -116,9 +116,10 @@ async def main():
         a = await admin_ctx.new_page()
         a.on('console', lambda m: m.type == 'error' and errors.append('admin: ' + m.text))
         a.on('pageerror', lambda e: errors.append('admin: ' + str(e)))
-        await a.goto(URL)
+        await a.goto(URL + '#/dashboard')
+        await a.wait_for_selector('#pw1')
         await a.fill('#pw1', PW); await a.fill('#pw2', PW); await a.click('#auth-form button')
-        await a.wait_for_selector('.hero-card')
+        await a.wait_for_selector('.event-card')
 
         # 1. Cipta majlis
         await a.goto(URL + '#/attendance')

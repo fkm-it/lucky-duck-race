@@ -13,6 +13,8 @@ export const STATUS = Object.freeze({ ELIGIBLE: 'ELIGIBLE', WINNER: 'WINNER' });
 
 export const DEFAULT_SETTINGS = Object.freeze({
   eventName: '',
+  eventDate: '',
+  eventLocation: '',
   subtitle: 'LET THE LUCK RACE BEGIN!',
   renderMode: 'auto', // auto | 3d | 2d
   quality: 'high', // high | low
@@ -40,6 +42,8 @@ export async function saveSettings(patch) {
   const next = { ...cur, ...patch, volumes: { ...cur.volumes, ...(patch.volumes || {}) } };
   next.raceDuration = Math.min(60, Math.max(8, Number(next.raceDuration) || 15));
   next.eventName = cleanText(next.eventName, 120);
+  next.eventLocation = cleanText(next.eventLocation, 120);
+  next.eventDate = /^\d{4}-\d{2}-\d{2}$/.test(next.eventDate || '') ? next.eventDate : '';
   next.subtitle = cleanText(next.subtitle, 120) || DEFAULT_SETTINGS.subtitle;
   await put('settings', { key: 'app', value: next });
   settingsCache = next;

@@ -4,7 +4,7 @@
  */
 import { computeLayout, progressAt } from './logic.js';
 
-const LANE_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+const LANE_COLORS = ['#7C3AED', '#DB2777', '#9333EA', '#2563EB', '#C026D3', '#4F46E5', '#A21CAF', '#6D28D9'];
 
 export class Race2D {
   constructor(host, opt) {

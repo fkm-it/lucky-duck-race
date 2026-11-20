@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 — 2026-11-20
+- Antara muka baharu ikut mockup: tema ungu/emas, maskot itik bergoggle, logo LUCKY DUCK RACE.
+- **Paparan Utama** awam: butang Pendaftaran Kehadiran Staf (papar QR) & Cabutan Bertuah, menu ikon admin.
+- Panel admin: sidebar baharu (Dashboard, Data Staf, Pendaftaran Kehadiran, Peserta Cabutan, Cabutan Bertuah, Rekod Pemenang, Laporan & Export, Tetapan Sistem, Log Keluar).
+- **Dashboard Acara**: maklumat majlis (tarikh, lokasi), 4 kad statistik, carta donat kehadiran, aktiviti terkini.
+- Laman kehadiran telefon & poster QR (standee) direka semula; halaman **Laporan & Export** baharu (pemenang, peserta, kehadiran, audit, sandaran).
+- Pentas: itik bergoggle + bib, trek ungu/merah jambu, garisan FINISH berpetak, bar HUD bawah dengan butang **MULA CABUTAN**; skrin **TAHNIAH!** dengan jadual pemenang.
+
 ## 1.1.0 — 2026-11-20
 - Modul **Kehadiran (QR)**: senarai staf dimuat naik ke pelayan majlis (Supabase); staf imbas QR → masukkan No. Pekerja → maklumat dipaparkan → **Sahkan Kehadiran**.
 - Staf yang hadir **automatik menjadi peserta cabutan** (laptop menyegerak setiap 5 saat, nombor itik diberi). Batal kehadiran membuang peserta yang belum menang.

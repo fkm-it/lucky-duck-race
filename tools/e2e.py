@@ -44,7 +44,7 @@ async def stage_draw(page, name, reveal_one):
     await page.wait_for_selector('#stg-lead:not([hidden])', timeout=20000)
     await page.wait_for_timeout(4000)
     await shot(page, name + '-3-race')
-    await page.wait_for_selector('.fs-chip', timeout=60000)
+    await page.wait_for_selector('.fs-chip', state='attached', timeout=60000)
     await page.wait_for_timeout(600)
     await shot(page, name + '-4-finish')
     if reveal_one:
@@ -69,6 +69,10 @@ async def main():
         page.on('console', lambda m: m.type == 'error' and errors.append(m.text))
         page.on('pageerror', lambda e: errors.append(str(e)))
         await page.goto(URL)
+        await page.wait_for_selector('.home-cta')
+        await page.wait_for_timeout(600)
+        await shot(page, '00-home')
+        await page.click('.home-nav [data-go=dashboard]')
 
         # 1. Sediakan pentadbir
         await page.wait_for_selector('#pw1')
@@ -76,7 +80,7 @@ async def main():
         await page.fill('#pw1', PW)
         await page.fill('#pw2', PW)
         await page.click('#auth-form button')
-        await page.wait_for_selector('.hero-card')
+        await page.wait_for_selector('.event-card')
 
         # 2. Import Excel (500, Staff ID sifar di hadapan)
         await page.goto(URL + '#/import')
@@ -146,7 +150,7 @@ async def main():
         await page.click('[data-tab=draws]')
         await shot(page, '09-draws')
         await page.goto(URL + '#/dashboard')
-        await page.wait_for_selector('.stat-grid')
+        await page.wait_for_selector('.kpi-grid')
         await shot(page, '10-dashboard')
 
         # 11. Mod 2D
@@ -168,11 +172,16 @@ async def main():
         m = await b.new_context(viewport={'width': 360, 'height': 740}, device_scale_factor=2)
         mp = await m.new_page()
         await mp.goto(URL)
+        await mp.wait_for_selector('.home-cta')
+        await shot(mp, '12a-mobile-home')
+        assert await mp.evaluate('document.documentElement.scrollWidth') <= 360, 'home mendatar'
+        await mp.click('.home-nav [data-go=dashboard]')
+        await mp.wait_for_selector('#pw1')
         await mp.fill('#pw1', PW)
         if await mp.locator('#pw2').count():
             await mp.fill('#pw2', PW)
         await mp.click('#auth-form button')
-        await mp.wait_for_selector('.hero-card')
+        await mp.wait_for_selector('.event-card')
         await shot(mp, '12-mobile-dashboard')
         sw = await mp.evaluate('document.documentElement.scrollWidth')
         assert sw <= 360, 'skrol mendatar pada telefon: %s' % sw
@@ -183,7 +192,7 @@ async def main():
         await page.evaluate('navigator.serviceWorker.ready')
         await ctx.set_offline(True)
         await page.reload()
-        await page.wait_for_selector('.stat-grid, #pw1', timeout=15000)
+        await page.wait_for_selector('.kpi-grid, #pw1', timeout=15000)
         await shot(page, '13-offline')
         await ctx.set_offline(False)
         await b.close()
