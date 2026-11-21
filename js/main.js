@@ -59,7 +59,7 @@ async function showHome() {
     <div class="home">
       ${concertBg()}
       <header class="home-hero">
-        <div class="home-poster"><img src="icons/rockstar-poster.webp" alt="Maskot rasmi Rockstar Duck"></div>
+        <div class="home-poster"><img src="icons/rockstar-duck.webp" alt="Maskot rasmi Rockstar Duck"></div>
         <div class="home-brand">
           <img class="home-logo" src="icons/logo.svg" alt="Rock The Draw">
           <div class="home-slogan">LET'S ROCK. LET'S WIN!</div>
