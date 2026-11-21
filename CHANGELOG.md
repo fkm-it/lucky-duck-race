@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1 — 2026-11-21 — Maskot rasmi baharu
+
+- Maskot utama Rockstar Duck 3D baharu (latar dibuang): poster laman utama, log masuk, papan QR, skrin muat.
+- Ikon app (192/512/maskable/apple-touch/favicon) dijana semula daripada maskot baharu.
+
 ## 3.0.0 — 2026-11-21 — Dalam talian + luar talian (penyegerakan awan)
 
 - **Majlis awan**: semua pelayar / laptop yang log masuk dengan **kod majlis + kata laluan** berkongsi data yang sama (peserta, hadiah, cabutan, pemenang, log, tetapan majlis).
