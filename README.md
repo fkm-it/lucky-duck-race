@@ -1,84 +1,71 @@
 # 🤘 ROCK THE DRAW — *Let's Rock. Let's Win!*
 
-(dahulunya Lucky Duck Race)
+Sistem **pendaftaran kehadiran (QR)** dan **cabutan bertuah perlumbaan itik 3D** untuk majlis korporat dan universiti.
 
-Sistem cabutan bertuah **perlumbaan itik 3D** untuk majlis korporat, universiti, makan malam tahunan dan majlis penghargaan staf. Setiap peserta = seekor itik. Pemenang dipilih secara **rawak kriptografi** sebelum perlumbaan, animasi memaparkan keputusan itu, dan pemenang **dibuang automatik** daripada kumpulan layak.
+**Live:** https://fkm-it.github.io/lucky-duck-race/ · **Versi 4**: satu pangkalan data pusat, satu sistem log masuk, data sama di semua pelayar & peranti, dan terus berfungsi tanpa internet.
 
-**Live:** `https://<owner>.github.io/<repo>/` · berfungsi **luar talian** selepas lawatan pertama.
+## Ringkasan seni bina (v4)
 
-## Ciri utama
+```
+ Telefon staf (QR) ──► RPC awam (token QR) ─┐
+ Chrome / Edge / laptop / tablet            │        Supabase (projek dashboard-unit-it-fkm)
+   ├─ Supabase Auth (e-mel + kata laluan) ──┼──►  ┌─────────────────────────────────────────┐
+   ├─ IndexedDB = cache luar talian         │     │ skema luckyduck (tidak didedahkan, RLS)  │
+   │   + baris gilir 'outbox'               │     │ staff · attendance · participants        │
+   └─ enjin segerak (push/pull ikut rev) ───┘     │ prize_categories · prizes · draw_sessions│
+            ▲                                     │ winners · audit_logs · settings          │
+            └──── Realtime (public.ldr_pulse) ────│ app_users · events · tombstones · sync_queue
+                                                  │ RPC public.ldr_* (SECURITY DEFINER +     │
+                                                  │ semakan peranan) · ldr_draw (atomik)     │
+                                                  └─────────────────────────────────────────┘
+```
 
-| Modul | Ringkasan |
+- **Pangkalan data pusat** ialah sumber kebenaran. IndexedDB hanya cache luar talian + baris gilir.
+- **Kehadiran → peserta cabutan** dicipta **di pelayan** secara atomik (kekangan unik: satu kehadiran & satu kelayakan bagi setiap No. Pekerja).
+- **Cabutan dalam talian** dibuat **di pelayan** (`ldr_draw`: kunci baris majlis + `gen_random_bytes` + Fisher–Yates + kod integriti SHA-256) → mustahil dua peranti memilih pemenang bertindih.
+- **Luar talian:** pengguna yang pernah log masuk di peranti itu boleh masuk semula (pengesah PBKDF2 setempat, peranan terakhir). Rekod baharu disimpan dalam baris gilir dan dihantar automatik bila internet pulih. Cabutan luar talian hanya di **Peranti Kawalan** yang ditetapkan.
+- **Penunjuk sambungan:** `ONLINE` · `OFFLINE` · `SYNCING (n)` · `SYNC COMPLETE`.
+
+## Peranan
+
+| Peranan | Boleh |
 |---|---|
-| Pentas perlumbaan | 3D (Three.js, 1 draw call / bahagian itik → 1,000+ itik lancar), kiraan detik 3-2-1-GO, kamera dinamik, penonton bersorak, mahkota emas, sorotan, konfeti, bunga api. Mod 2D untuk komputer lemah. Skrin penuh 16:9. |
-| Keadilan | `crypto.getRandomValues` + *rejection sampling* + Fisher–Yates → setiap peserta berkebarangkalian sama. Pemilihan berlaku dalam **satu transaksi IndexedDB** sebelum animasi; animasi tidak boleh mempengaruhi keputusan. Kod integriti SHA-256 bagi setiap cabutan. |
-| Peserta | Import .xlsx / .xls / .csv, pemetaan lajur, pratonton, validasi (wajib, pendua dalam fail, sudah wujud, format saintifik Excel). **Staff ID disimpan sebagai TEKS** (sifar di hadapan kekal). Tambah / sunting / padam / cari / tapis jabatan / status. |
-| Hadiah | Grand / First / Second / Third / Consolation / Special — nama, imej, bilangan, keterangan, turutan. Jumlah pemenang dikira automatik. |
-| Cabutan | Pilih hadiah & bilangan, mod **A: Satu demi satu** atau **B: Grand Finale**. Pemenang tidak boleh menang lagi (kecuali tetapan admin). |
-| Sejarah | Draw ID, No. pemenang, nama, Staff ID, jabatan, kategori, hadiah, tarikh, masa. Pulih kelayakan (dengan sebab), main semula perlumbaan, eksport **Excel / CSV / PDF**. |
-| Admin | Log masuk (PBKDF2-SHA256), statistik langsung, log audit, sandaran/pulih JSON, reset (taip `RESET`). |
-| Bunyi | Kiraan detik, hon, larian, muzik, kemenangan, tepukan, bunga api — disintesis (tiada fail), kelantangan setiap saluran + utama. **Senyap secara lalai.** |
+| **Pentadbir** | Semua: staf, kehadiran, peserta, hadiah, cabutan, pengguna & peranan, majlis, tetapan, import/eksport, sandaran |
+| **Operator Cabutan** | Jalankan cabutan, lihat peserta layak & sejarah pemenang, pulih pemenang. Tidak boleh ubah data staf / hadiah |
+| **Staf Pendaftaran** | Cari & sahkan staf, sahkan / batal kehadiran (termasuk luar talian), lihat rekod kehadiran |
+| *Telefon staf (awam)* | Hanya semak No. Pekerja sendiri & sahkan kehadiran melalui token QR. Senarai staf tidak pernah didedahkan |
 
-## Pendaftaran kehadiran (QR) — pilihan
-
-1. **Kehadiran (QR)** → *Cipta majlis dalam talian* → muat naik **senarai semua staf** (Excel: Staff Name, Staff ID, Department).
-2. Paparkan QR di meja pendaftaran (*Papar skrin penuh*) atau *Cetak poster*.
-3. Staf imbas QR → masukkan **No. Pekerja** → semak maklumat → **Sahkan Kehadiran**.
-4. Laptop menyegerak setiap 5 saat → staf yang hadir **automatik menjadi peserta cabutan**. Staf tanpa telefon boleh disahkan manual di kaunter.
-
-Pelayan: Supabase projek `dashboard-unit-it-fkm`, skema `luckyduck` (lihat `supabase/migrations/`). Pendaftaran memerlukan internet; perlumbaan tidak.
+Peranan dikuatkuasa **di pelayan** (setiap RPC menyemak `auth.uid()` + peranan) dan disembunyikan di UI.
 
 ## Aliran majlis
 
-1. Buka aplikasi → tetapkan kata laluan pentadbir (kali pertama).
-2. **Import Excel** (`samples/peserta-contoh-500.xlsx` untuk cubaan) → padankan lajur → semak → sahkan.
-3. **Hadiah** → tambah kategori (atau "Guna susunan contoh").
-4. **Mula Perlumbaan** → pilih hadiah, bilangan, mod pendedahan → *Buka Pentas*.
-5. Tekan **F** (skrin penuh) → **MULA / Space** → itik berlumba → pengumuman pemenang.
-6. Ulang untuk hadiah seterusnya → **Sejarah Pemenang** → eksport laporan.
+1. Pentadbir log masuk → **Pendaftaran Kehadiran** → cipta majlis (sekali) → **Data Staf** → muat naik Excel staf.
+2. Pengguna lain daftar akaun di skrin log masuk → pentadbir tetapkan peranan di **Tetapan Sistem → Pengguna & peranan**.
+3. Hari majlis: paparkan QR di kaunter. Staf imbas → No. Pekerja → **Sahkan Kehadiran** → terus jadi peserta (semua peranti nampak serta-merta).
+4. Laptop pentas: **Tetapan → Jadikan peranti ini Peranti Kawalan** → **Cabutan Bertuah** → pilih hadiah → MULA.
+5. Selepas majlis: **Laporan & Eksport** (Excel/CSV/PDF) dan sandaran.
 
 Pintasan pentas: `Space` mula / seterusnya · `F` skrin penuh · `M` bunyi · `Esc` tutup.
 
-## Seni bina
+## Dokumentasi
 
-```
-index.html            kerangka + CSP ketat (script-src 'self')
-css/app.css           gaya admin (minimal) + pentas (LED/projektor)
-js/main.js            log masuk, hash router, statistik
-js/store.js           peraturan perniagaan + transaksi (cabutan, pulih, reset, sandaran)
-js/db.js              IndexedDB (participants, prizes, draws, winners, audit, settings)
-js/rng.js             rawak kriptografi tanpa bias, SHA-256
-js/logic.js           logik tulen: validasi import, status hadiah, pelan perlumbaan, susun atur
-js/race.js            pengawal pentas (MULA → cabutan → kiraan detik → perlumbaan → pengumuman)
-js/race3d.js          pemapar Three.js (InstancedMesh)        js/race2d.js  pemapar kanvas 2D
-js/audio.js           bunyi Web Audio                          js/fx.js      konfeti & bunga api
-js/io.js              SheetJS: baca Excel/CSV, eksport XLSX/CSV, laporan cetak
-js/views/*.js         Dashboard, Peserta, Import, Hadiah, Cabutan, Sejarah, Audit, Tetapan
-vendor/               three.module.min.js, xlsx.full.min.js (luar talian, tiada CDN masa jalan)
-sw.js                 DIJANA (npm run build:sw) — cache semua aset
-```
-
-Asas PWA & aliran deploy diambil daripada templat `gas-pwa-starter` (service worker cache-dahulu, manifest, ikon, GitHub Actions → Pages). Data disimpan dalam **IndexedDB** pelayar (bukan Apps Script) supaya majlis tidak bergantung pada internet.
+| Dokumen | Kandungan |
+|---|---|
+| [docs/SENI-BINA.md](docs/SENI-BINA.md) | Skema pangkalan data, enjin penyegerakan, peraturan konflik, keselamatan (RLS, RPC, Auth) |
+| [docs/OPERASI.md](docs/OPERASI.md) | Persediaan Supabase & GitHub Pages, konfigurasi persekitaran, pengguna pertama, sandaran & pemulihan, senarai semak hari majlis |
+| [docs/RANGKAIAN-SETEMPAT.md](docs/RANGKAIAN-SETEMPAT.md) | Mod pelayan rangkaian setempat (LAN) tanpa internet — had & pilihan pelaksanaan |
+| [docs/LAPORAN-UJIAN.md](docs/LAPORAN-UJIAN.md) | Laporan ujian penerimaan (Ujian 1–11) |
+| [CHANGELOG.md](CHANGELOG.md) | Sejarah versi |
 
 ## Pembangunan
 
 ```bash
 npm ci
-npm test            # ujian unit + aliran storan penuh (fake-indexeddb)
+npm test            # ujian unit: rawak, storan, enjin segerak + Auth (pelayan palsu)
 npm run check       # sintaks, corak XSS, sw.js terkini
 npm run dev         # http://localhost:8080
-npm run e2e         # Playwright: import → hadiah → 2 cabutan 3D → pulih → eksport → 2D → telefon 360px → luar talian
+npm run e2e         # Playwright: aliran majlis, kehadiran QR, ujian penerimaan pangkalan data pusat
 npm run build:sw    # WAJIB selepas mengubah mana-mana fail aset
 ```
 
-## Deploy (GitHub Pages)
-
-Setiap push ke `main` → `.github/workflows/deploy.yml` (ujian → binaan → Pages). Persediaan sekali: **Settings → Pages → Source: GitHub Actions**. CI menggantikan SheetJS dengan versi 0.20.3 daripada CDN rasmi SheetJS (membetulkan CVE dalam versi npm 0.18.x).
-
-## Keselamatan & had
-
-- Semua HTML dinamik melalui `html```(auto-escape); CSP ketat; sel eksport dineutralkan daripada *formula injection*.
-- Log masuk melindungi panel pada komputer majlis. Oleh kerana tiada pelayan, sesiapa yang mempunyai akses penuh kepada pelayar/komputer boleh memeriksa IndexedDB — gunakan akaun komputer yang dikunci.
-- Data hanya wujud pada **pelayar & komputer itu**. Muat turun **sandaran JSON** selepas majlis. Mengosongkan data pelayar akan memadam rekod.
-- Supabase digunakan untuk modul kehadiran sahaja; cabutan & sejarah pemenang kekal di laptop (IndexedDB).
-- Token QR mengesahkan staf berada di majlis, bukan identiti mereka — sesiapa yang mempunyai QR dan No. Pekerja orang lain boleh mengesahkan bagi pihaknya. Tukar kod QR jika tersebar.
+Push ke `main` → GitHub Actions (ujian → binaan → GitHub Pages).

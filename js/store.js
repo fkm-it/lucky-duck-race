@@ -7,6 +7,7 @@ import { tx, reqP, getAll, get, put, count, openDb } from './db.js';
 import { pickUnique, randomHex, sha256Hex } from './rng.js';
 import { cleanText, normalizeStaffId, validateStaffId, FIELD_LIMITS, prizeStatus } from './logic.js';
 import * as sync from './sync.js';
+import * as auth from './auth.js';
 
 export const STATUS = Object.freeze({ ELIGIBLE: 'ELIGIBLE', WINNER: 'WINNER' });
 
@@ -68,7 +69,9 @@ export async function saveSettings(patch) {
 
 function auditRec(action, detail) {
   // ID teks unik (bukan autoIncrement) supaya log dari beberapa peranti tidak bertindih semasa penyegerakan
-  return { id: 'A' + Date.now().toString(36) + randomHex(4), at: new Date().toISOString(), action, detail: typeof detail === 'string' ? detail : JSON.stringify(detail) };
+  const p = auth.profile();
+  return { id: 'A' + Date.now().toString(36) + randomHex(4), at: new Date().toISOString(), action, detail: typeof detail === 'string' ? detail : JSON.stringify(detail),
+    user: p ? (p.name || p.email || '') : '', device: sync.state.device ? sync.state.device.name : '' };
 }
 
 export async function audit(action, detail = '') {
@@ -95,8 +98,14 @@ export async function existingIds() {
 }
 
 async function nextDuckNoIn(stores) {
+  // Nombor itik seterusnya = maks(jujukan tersimpan, nombor terbesar + 1) — selamat walaupun peserta datang dari pelayan
   const rec = await reqP(stores.settings.get('duckSeq'));
-  return rec ? rec.value : 1;
+  const top = await new Promise((resolve, reject) => {
+    const r = stores.participants.index('duckNo').openCursor(null, 'prev');
+    r.onsuccess = () => resolve(r.result ? r.result.value.duckNo : 0);
+    r.onerror = () => reject(r.error);
+  });
+  return Math.max(rec ? rec.value : 1, (top || 0) + 1);
 }
 
 function sanitizeParticipant(p) {
@@ -295,8 +304,25 @@ export async function executeDraw(opt) {
 }
 
 async function executeDrawInner({ prizeId = '', count: wanted, revealMode = 'one' }) {
-  if (sync.isCloud() && !sync.isControl()) {
-    throw new Error('Cabutan hanya boleh dibuat di Peranti Kawalan (' + (sync.controlName() || '—') + '). Jadikan peranti ini Peranti Kawalan di Tetapan Sistem jika perlu.');
+  if (sync.active()) {
+    if (!['admin', 'operator'].includes(sync.state.role)) throw new Error('Hanya Pentadbir atau Operator Cabutan boleh membuat cabutan.');
+    const k0 = parseInt(wanted, 10);
+    if (!Number.isInteger(k0) || k0 < 1) throw new Error('Bilangan pemenang mesti sekurang-kurangnya 1.');
+    // DALAM TALIAN: pemenang dipilih DI PELAYAN secara atomik (tiada pemenang bertindih antara peranti)
+    if (sync.state.pending) await sync.flush(6000); // perubahan setempat (cth. hadiah baharu) dihantar dahulu
+    try {
+      return await sync.serverDraw({ drawId: drawId(), prizeId, count: k0, revealMode });
+    } catch (e) {
+      if (!(e && e.code === 'NETWORK')) {
+        if (e && e.code === 'PRIZE_EXHAUSTED') throw new Error('Baki hadiah hanya ' + (e.hint || 0) + '.');
+        if (e && e.code === 'TOO_MANY') throw new Error('Bilangan pemenang (' + k0 + ') melebihi peserta layak (' + (e.hint || 0) + ').');
+        throw e;
+      }
+    }
+    // LUAR TALIAN: hanya Peranti Kawalan (pihak berkuasa cabutan yang ditetapkan) — dihantar ke pelayan bila online
+    if (!sync.isControl()) {
+      throw new Error('Tiada sambungan ke pangkalan data pusat. Cabutan luar talian hanya dibenarkan di Peranti Kawalan (' + (sync.controlName() || 'belum ditetapkan') + ').');
+    }
   }
   const st = await getSettings();
   const k = parseInt(wanted, 10);
@@ -358,6 +384,7 @@ async function executeDrawInner({ prizeId = '', count: wanted, revealMode = 'one
       prizeName: prize ? prize.name : 'Cabutan Khas', count: k, poolSize: pool.length,
       poolIds: pool.map((p) => p.staffId), winnerIds: winners.map((w) => w.staffId),
       revealMode, status: 'COMMITTED', salt, allowMultipleWins: !!st.allowMultipleWins, integrity: '',
+      mode: sync.active() ? 'offline' : 'local',
     };
     writes.push(reqP(s.draws.add(draw)));
     writes.push(reqP(s.audit.add(auditRec('CABUTAN', { id, hadiah: draw.prizeName, pemenang: k, layak: pool.length, staff: draw.winnerIds }))));
@@ -485,8 +512,8 @@ export async function stats() {
 
 // ----------------------------------------------------------------------------- Sandaran
 
-const BACKUP_STORES = ['participants', 'prizes', 'draws', 'winners', 'audit', 'settings'];
-const LOCAL_ONLY = new Set(['auth', 'cloud', 'device']);
+const BACKUP_STORES = ['staff', 'attendance', 'participants', 'prizes', 'draws', 'winners', 'audit', 'settings'];
+const LOCAL_ONLY = new Set(['auth', 'cloud', 'device', 'authSession', 'offlineAuth', 'syncMeta', 'attendance', 'lastEvent', 'lastEmail']);
 
 export async function exportBackup() {
   const out = { app: 'lucky-duck-race', version: 1, exportedAt: new Date().toISOString(), data: {} };
@@ -503,6 +530,7 @@ export async function importBackup(obj) {
   await tx(BACKUP_STORES, 'readwrite', async (s) => {
     const keep = (await Promise.all([...LOCAL_ONLY].map((k) => reqP(s.settings.get(k))))).filter(Boolean);
     for (const n of BACKUP_STORES) {
+      if (!(n in obj.data)) continue; // sandaran versi lama tanpa stor ini → data sedia ada dikekalkan
       await reqP(s[n].clear());
       for (const r of obj.data[n] || []) {
         if (n === 'settings' && LOCAL_ONLY.has(r.key)) continue;

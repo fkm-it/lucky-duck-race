@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0.0 — 2026-11-21 — Pangkalan data pusat, Supabase Auth & hibrid dalam/luar talian
+
+- **Satu pangkalan data pusat** (Supabase PostgreSQL, skema `luckyduck`, ternormal): `staff`, `attendance`, `participants`, `prize_categories`, `prizes`, `draw_sessions`, `winners`, `audit_logs`, `settings`, `app_users`, `events`, `tombstones`, `sync_queue`. RLS dihidupkan; akses hanya melalui RPC `ldr_*` yang menyemak peranan.
+- **Supabase Auth** (e-mel + kata laluan) dengan peranan **Pentadbir / Operator Cabutan / Staf Pendaftaran**; daftar akaun → kelulusan pentadbir; kod pentadbir pertama; lupa / set semula kata laluan.
+- **Log masuk luar talian** selamat (PBKDF2) untuk pengguna yang pernah log masuk dalam talian di peranti itu.
+- **Enjin penyegerakan**: IndexedDB = cache + baris gilir (kekal selepas muat semula), push/pull ikut revisi, Realtime + tinjauan, penolakan konflik, log ralat di pelayan.
+- **Kehadiran → peserta di pelayan** (atomik, tiada pendua walaupun serentak); kehadiran di kaunter boleh direkod luar talian.
+- **Cabutan dalam talian di pelayan** (`ldr_draw`, atomik, rawak kriptografi, integriti SHA-256). Luar talian: hanya Peranti Kawalan.
+- Penunjuk sambungan **ONLINE / OFFLINE / SYNCING / SYNC COMPLETE**; menu & butang ikut peranan; pengurusan pengguna & majlis; migrasi data pelayar versi lama.
+- Dokumentasi: `docs/SENI-BINA.md`, `docs/OPERASI.md`, `docs/RANGKAIAN-SETEMPAT.md`, `docs/LAPORAN-UJIAN.md`.
+- Ujian: `tests/sync.test.mjs` (8), `tools/fake_supabase.py`, `tools/e2e_cloud.py` (ujian penerimaan 1–10).
+
 ## 3.0.2 — 2026-11-21
 
 - Poster laman utama kembali kepada gambar Rockstar Duck asal.

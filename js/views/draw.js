@@ -49,7 +49,10 @@ export async function render(el, ctx) {
           <li class="${settings.soundEnabled ? 'ok' : ''}">Bunyi ${settings.soundEnabled ? 'dihidupkan' : 'dimatikan'} — <a href="#/settings">ubah</a></li>
           <li class="ok">Mod paparan: ${settings.renderMode === '2d' ? '2D' : '3D'} · kualiti ${settings.quality === 'low' ? 'rendah' : 'tinggi'}</li>
           <li class="ok">Tempoh perlumbaan ±${settings.raceDuration}s</li>
-          ${sync.isCloud() ? html`<li class="${sync.isControl() ? 'ok' : ''}">${sync.isControl() ? 'Peranti ini ialah Peranti Kawalan (boleh cabut walaupun luar talian)' : html`Cabutan hanya di Peranti Kawalan: <b>${sync.controlName() || '—'}</b> — <a href="#/settings">ambil alih</a>`}</li>` : ''}
+          ${sync.active() ? html`<li class="${sync.state.online || sync.isControl() ? 'ok' : ''}">${sync.state.online
+            ? 'Dalam talian: pemenang dipilih di pangkalan data pusat (atomik, sama untuk semua peranti)'
+            : sync.isControl() ? 'Luar talian: peranti ini Peranti Kawalan — keputusan dihantar bila online'
+              : html`Luar talian: cabutan hanya di Peranti Kawalan <b>${sync.controlName() || '—'}</b>`}</li>` : ''}
         </ul>
         <p class="tiny muted">Pintasan pada pentas: <kbd>Space</kbd> mula / seterusnya · <kbd>F</kbd> skrin penuh · <kbd>M</kbd> bunyi · <kbd>Esc</kbd> tutup.</p>
       </section>
@@ -59,7 +62,8 @@ export async function render(el, ctx) {
     const n = parseInt($('#d-count').value, 10);
     const max = maxFor();
     let msg = '';
-    if (sync.isCloud() && !sync.isControl()) msg = 'Peranti ini bukan Peranti Kawalan. Cabutan hanya boleh dibuat di ' + (sync.controlName() || 'Peranti Kawalan') + ' (atau ambil alih di Tetapan Sistem).';
+    if (sync.active() && !['admin', 'operator'].includes(sync.state.role)) msg = 'Hanya Pentadbir atau Operator Cabutan boleh membuat cabutan.';
+    else if (sync.active() && !sync.state.online && !sync.isControl()) msg = 'Tiada sambungan internet. Cabutan luar talian hanya di Peranti Kawalan (' + (sync.controlName() || 'belum ditetapkan') + ').';
     else if (!pool.length) msg = 'Tiada peserta layak. Import peserta atau pulihkan pemenang.';
     else if (!Number.isInteger(n) || n < 1) msg = 'Bilangan pemenang mesti sekurang-kurangnya 1.';
     else if (n > max) msg = 'Maksimum ' + max + (cur() ? ' (baki hadiah / peserta layak).' : ' (peserta layak).');
@@ -78,7 +82,7 @@ export async function render(el, ctx) {
   $('#d-open').addEventListener('click', async () => {
     if (!warn()) return;
     try {
-      if (sync.isCloud()) { $('#d-open').disabled = true; await sync.flush(5000); $('#d-open').disabled = false; } // data terkini sebelum cabutan (diabaikan jika luar talian)
+      if (sync.active()) { $('#d-open').disabled = true; await sync.flush(5000); $('#d-open').disabled = false; } // data terkini sebelum cabutan (diabaikan jika luar talian)
       const fresh = await store.eligiblePool();
       const c = cur();
       const drew = await openStage({ pool: fresh, prize: c ? c.prize : null, count: parseInt($('#d-count').value, 10), revealMode: st.reveal });

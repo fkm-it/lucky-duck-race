@@ -19,8 +19,8 @@ export async function render(el, ctx) {
   const [s, settings, cfg, participants, winners] = await Promise.all([store.stats(), store.getSettings(), att.getConfig(), store.listParticipants(), store.listWinners()]);
   let info = null;
   if (cfg) { try { info = await att.eventInfo(); } catch (_) { /* luar talian */ } }
-  const totalStaff = info ? Number(info.total) : s.total;
-  const present = info ? Number(info.present) : participants.filter((p) => p.checkedInAt).length;
+  const totalStaff = info && Number(info.total) ? Number(info.total) : s.total;
+  const present = info && Number(info.total) ? Number(info.present) : participants.filter((p) => p.checkedInAt).length;
   const pct = totalStaff ? present / totalStaff : 0;
   const recentIn = participants.filter((p) => p.checkedInAt).sort((a, b) => b.checkedInAt.localeCompare(a.checkedInAt)).slice(0, 6);
   const recentWin = winners.filter((w) => !w.revoked).slice(-6).reverse();

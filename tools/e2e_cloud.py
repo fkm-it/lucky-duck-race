@@ -1,100 +1,42 @@
 #!/usr/bin/env python3
-"""E2E penyegerakan awan: dua pelayar (Laptop Kawalan + pelayar kedua) + telefon, dengan pelayan Supabase TIRUAN.
+"""E2E v4 — UJIAN PENERIMAAN pangkalan data pusat (spesifikasi §10), dengan pelayan Supabase TIRUAN
+yang meniru fungsi SQL (tools/fake_supabase.py). Beberapa konteks pelayar = pelayar / komputer berbeza.
+
    python3 tools/e2e_cloud.py [URL]
+Mencetak laporan ujian (UJIAN 1–10) dan menyimpan tangkapan skrin C*.png dalam e2e-shots/.
 """
-import asyncio, os, sys, json, secrets
+import asyncio, os, sys, json
 from playwright.async_api import async_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import e2e_attendance as A  # pelayan tiruan kehadiran (rpc, EV, STAFF, H, Err)
+from fake_supabase import FakeSupabase, IGNORE_CONSOLE
 
 URL = sys.argv[1] if len(sys.argv) > 1 else 'http://localhost:8080/'
-SHOTS = A.SHOTS
-PW = 'Majlis2026'
-errors = []
-
-DOCS, SESS = {}, {}
-REV = [0]
-OFFLINE = set()  # konteks yang "tiada internet"
-
-
-def cloud(fn, a):
-    def sess():
-        d = SESS.get(a.get('p_session'))
-        if not d or d['event'] != a['p_event']: raise A.Err('SESSION')
-        return d['device']
-
-    def meta(e_id, extra=None):
-        e = A.EV[e_id]
-        m = {'event_id': e_id, 'name': e['name'], 'code': e.get('code'), 'qr_token': e.get('qr'), 'control_device': e.get('ctl'), 'control_name': e.get('ctl_name')}
-        m.update(extra or {}); return m
-
-    def new_session(e_id, dev, name):
-        t = secrets.token_hex(24); SESS[t] = {'event': e_id, 'device': dev, 'name': name}; return t
-
-    if fn == 'ldr_cloud_enable':
-        e = A.EV.get(a['p_event'])
-        if not e or e['admin'] != A.H(a['p_admin_key']): raise A.Err('FORBIDDEN')
-        if e['token'] != A.H(a['p_qr_token']): raise A.Err('BAD_INPUT')
-        e.update(code=e.get('code') or 'RTD-' + secrets.token_hex(3).upper(), pw=a['p_password'], qr=a['p_qr_token'], ctl=a['p_device'], ctl_name=a['p_device_name'])
-        return meta(a['p_event'], {'session': new_session(a['p_event'], a['p_device'], a['p_device_name'])})
-    if fn == 'ldr_cloud_join':
-        hit = [(i, e) for i, e in A.EV.items() if e.get('code') == a['p_code'].strip().upper() and e.get('pw') == a['p_password']]
-        if not hit: raise A.Err('BAD_LOGIN')
-        i = hit[0][0]
-        return meta(i, {'session': new_session(i, a['p_device'], a['p_device_name'])})
-    if fn == 'ldr_cloud_push':
-        dev = sess(); e = A.EV[a['p_event']]; ctl = e.get('ctl') == dev
-        applied, rejected = [], []
-        for r in a['p_rows']:
-            k = (a['p_event'], r['s'], r['k']); cur = DOCS.get(k)
-            if cur and not ctl and cur['r'] > (r.get('b') or 0):
-                rejected.append(cur); continue
-            REV[0] += 1
-            DOCS[k] = {'s': r['s'], 'k': r['k'], 'r': REV[0], 'd': None if r.get('x') else r.get('d'), 'x': bool(r.get('x'))}
-            applied.append({'s': r['s'], 'k': r['k'], 'r': REV[0]})
-        return {'applied': applied, 'rejected': rejected, 'control': ctl}
-    if fn == 'ldr_cloud_pull':
-        sess()
-        rows = sorted([d for (ev, _, _), d in DOCS.items() if ev == a['p_event'] and d['r'] > (a.get('p_since') or 0)], key=lambda d: d['r'])[: a.get('p_limit') or 1000]
-        return {'rows': rows, 'more': len(rows) >= (a.get('p_limit') or 1000), 'meta': meta(a['p_event'])}
-    if fn == 'ldr_cloud_claim':
-        dev = sess(); e = A.EV[a['p_event']]
-        e['ctl'] = dev; e['ctl_name'] = [s['name'] for s in SESS.values() if s['device'] == dev][0]
-        return meta(a['p_event'])
-    if fn == 'ldr_cloud_leave':
-        SESS.pop(a.get('p_session'), None); return None
-    raise A.Err('UNKNOWN')
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SHOTS = os.path.join(ROOT, 'e2e-shots')
+os.makedirs(SHOTS, exist_ok=True)
+errors, report = [], []
+FS = FakeSupabase()
+ADMIN, APW = 'admin@fkm.utm.my', 'Admin1234'
+FS.add_user(ADMIN, APW, 'admin', 'Za')
+FS.add_user('operator@fkm.utm.my', 'Operator123', 'operator', 'Operator Pentas')
+FS.add_user('kaunter1@fkm.utm.my', 'Kaunter123', 'registrar', 'Kaunter 1')
+FS.add_user('kaunter2@fkm.utm.my', 'Kaunter123', 'registrar', 'Kaunter 2')
+EV = FS.add_event('Majlis Anugerah Inspirasi Mekanikal 2026')
+# 201 staf dalam senarai kehadiran (seperti majlis sebenar)
+for i in range(1, 202):
+    FS.put(EV, 'staff', 'S%04d' % i, {'name': 'Staf %d' % i, 'department': 'FKM'})
 
 
-def rpc(fn, a):
-    if fn.startswith('ldr_cloud_'): return cloud(fn, a)
-    # fungsi kehadiran: kunci admin ATAU token sesi
-    if 'p_admin_key' in a and a.get('p_admin_key') in SESS:
-        e = A.EV[a['p_event']]
-        saved = e['admin']; e['admin'] = A.H(a['p_admin_key'])
-        try: return A.rpc(fn, a)
-        finally: e['admin'] = saved
-    return A.rpc(fn, a)
+def ok(n, text):
+    report.append('UJIAN %s: LULUS — %s' % (n, text)); print(report[-1])
 
 
-def make_handler(name):
-    async def handler(route):
-        req = route.request
-        if req.method == 'OPTIONS':
-            return await route.fulfill(status=204, headers={'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST'})
-        if name in OFFLINE:
-            return await route.abort('internetdisconnected')
-        fn = req.url.rsplit('/', 1)[1]
-        try:
-            body = json.dumps(rpc(fn, json.loads(req.post_data or '{}')))
-            await route.fulfill(status=200, body=body, headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
-        except A.Err as e:
-            await route.fulfill(status=400, body=json.dumps({'code': 'P0001', 'message': str(e)}), headers={'content-type': 'application/json', 'access-control-allow-origin': '*'})
-    return handler
+async def shot(page, name):
+    await page.screenshot(path=os.path.join(SHOTS, name + '.png'))
 
 
-async def until(page, js, timeout=20):
+async def until(page, js, timeout=25):
     for _ in range(timeout * 4):
         if await page.evaluate(js):
             return
@@ -103,137 +45,195 @@ async def until(page, js, timeout=20):
 
 
 STATS = "import('./js/store.js').then(S => S.stats())"
+WINNERS = "import('./js/store.js').then(S => S.listWinners()).then(ws => ws.map(w => w.id + ':' + w.staffId + ':' + (w.revoked ? 'R' : 'A')).sort().join(','))"
 
 
-async def shot(page, name):
-    await page.screenshot(path=os.path.join(SHOTS, name + '.png'))
-
-
-async def browser_ctx(b, name, **kw):
+async def browser(b, name, **kw):
     ctx = await b.new_context(viewport=kw.pop('viewport', {'width': 1440, 'height': 900}), **kw)
-    await ctx.route('https://ajlxptgbwxnswcmyassf.supabase.co/**', make_handler(name))
+    await FS.attach(ctx, name)
     pg = await ctx.new_page()
-    pg.on('console', lambda m: m.type == 'error' and 'status of 400' not in m.text and 'INTERNET_DISCONNECTED' not in m.text and errors.append(name + ': ' + m.text))
+    pg.on('console', lambda m: m.type == 'error' and not any(x in m.text for x in IGNORE_CONSOLE) and errors.append(name + ': ' + m.text))
     pg.on('pageerror', lambda e: errors.append(name + ': ' + str(e)))
-    return pg
+    return ctx, pg
+
+
+async def login(page, email, pw, route='dashboard'):
+    await page.goto(URL + '#/' + route)
+    await page.wait_for_selector('#au-email')
+    await page.fill('#au-email', email)
+    await page.fill('#pw1', pw)
+    await page.click('#auth-form button[type=submit]')
 
 
 async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path='/usr/bin/google-chrome')
 
-        # ---------------------------------------------------------------- Laptop Kawalan (Edge)
-        a = await browser_ctx(b, 'kawalan')
-        await a.goto(URL + '#/dashboard')
-        await a.wait_for_selector('#pw1')
-        assert await a.locator('#auth-join').count() == 1, 'pilihan sertai majlis pada skrin pertama'
-        await a.fill('#pw1', 'Admin1234'); await a.fill('#pw2', 'Admin1234'); await a.click('#auth-form button[type=submit]')
-        await a.wait_for_selector('.event-card')
-        await a.evaluate("""import('./js/store.js').then(async S => {
-            await S.importParticipants(Array.from({length: 40}, (_, i) => ({ name: 'Staf ' + i, staffId: String(i).padStart(6, '0'), department: 'IT' })), 'skip', 'e2e');
-            await S.savePrize({ category: 'Hadiah Utama', name: 'Televisyen', quantity: 1, sequence: 1 });
-            await S.savePrize({ category: 'Sagu Hati', name: 'Baucar', quantity: 10, sequence: 5 });
+        # ---------------------------------------------------------------- Migrasi: pelayar dengan data versi lama
+        lctx, L = await browser(b, 'lama')
+        await L.goto(URL + '#/home'); await L.wait_for_selector('.home-cta')
+        await L.evaluate("""import('./js/store.js').then(async S => {
+            await S.importParticipants(Array.from({length: 12}, (_, i) => ({ name: 'Peserta Lama ' + i, staffId: 'L' + String(i).padStart(3, '0'), department: 'IT' })), 'skip', 'lama.xlsx');
+            await S.savePrize({ category: 'Hadiah Utama', name: 'Televisyen 55"', quantity: 1, sequence: 1 });
         })""")
-        await a.goto(URL + '#/settings')
-        await a.wait_for_selector('#cl-enable')
-        await shot(a, 'C1-cloud-off')
-        await a.click('#cl-enable')
-        await a.fill('#ce-name', 'Majlis Makan Malam FKM 2026')
-        await a.fill('#ce-pw1', PW); await a.fill('#ce-pw2', PW)
-        await a.locator('.modal-foot .btn-primary').click()
-        await a.wait_for_selector('.cloud-code', timeout=30000)
-        code = (await a.inner_text('.cloud-code')).strip()
-        assert code.startswith('RTD-'), code
-        await until(a, "import('./js/sync.js').then(s => s.state.pending === 0 && s.isControl())")
-        await a.wait_for_timeout(600)
-        await shot(a, 'C2-cloud-on-control')
-        assert '★ Peranti Kawalan' in await a.inner_text('#net-status'), await a.inner_text('#net-status')
-        assert len([d for d in DOCS.values() if d['s'] == 'participants']) == 40
+        await login(L, ADMIN, APW)
+        await L.wait_for_selector('.modal:has-text("Data dalam pelayar ini")', timeout=20000)
+        await shot(L, 'C0-migrate-prompt')
+        await L.locator('.modal-foot .btn-primary').click()
+        await L.wait_for_selector('.toast:has-text("berjaya dipindahkan")', timeout=60000)
+        assert FS.count(EV, 'participants') == 12 and FS.count(EV, 'prizes') == 1
+        ok('M', 'data pelayar versi lama (12 peserta, 1 hadiah) dipindahkan ke pangkalan data pusat tanpa dipadam')
+        await lctx.close()
 
-        # ---------------------------------------------------------------- Pelayar kedua (Brave) — sertai
-        bb = await browser_ctx(b, 'kedua')
-        await bb.goto(URL + '#/dashboard')
-        await bb.wait_for_selector('#auth-join')
-        await bb.click('#auth-join')
-        await bb.fill('#cj-code', code.lower()); await bb.fill('#cj-pw', 'salah999')
-        await bb.locator('.modal-foot .btn-primary').click()
-        await bb.wait_for_selector('.toast:has-text("salah")')
-        await bb.fill('#cj-pw', PW)
-        await bb.locator('.modal-foot .btn-primary').click()
-        await bb.wait_for_selector('.event-card', timeout=30000)
-        sb = await bb.evaluate(STATS)
-        assert sb['total'] == 40 and sb['prizeCategories'] == 2, sb
-        await bb.wait_for_timeout(500)
-        await shot(bb, 'C3-second-browser-dashboard')
+        # ---------------------------------------------------------------- UJIAN 1: Chrome import 201 peserta
+        actx, A = await browser(b, 'chrome')
+        await login(A, ADMIN, APW)
+        await A.wait_for_selector('.event-card')
+        await A.evaluate("""import('./js/store.js').then(S => S.importParticipants(Array.from({length: 201}, (_, i) => ({ name: 'Staf ' + (i + 1), staffId: 'S' + String(i + 1).padStart(4, '0'), department: 'FKM' })), 'skip', 'staf.xlsx'))""")
+        await until(A, "import('./js/sync.js').then(s => s.state.pending === 0)")
+        assert FS.count(EV, 'participants') == 213, FS.count(EV, 'participants')
+        ok(1, 'Chrome mengimport 201 staf → pangkalan data pusat ada %d peserta (201 + 12 dimigrasi)' % FS.count(EV, 'participants'))
 
-        # kata laluan yang sama berfungsi untuk log masuk semula di pelayar kedua
-        await bb.click('#btn-lock'); await bb.goto(URL + '#/dashboard')
-        await bb.wait_for_selector('#pw1'); await bb.fill('#pw1', PW); await bb.click('#auth-form button[type=submit]')
-        await bb.wait_for_selector('.event-card')
+        # ---------------------------------------------------------------- UJIAN 2: Edge memaparkan jumlah sama
+        ectx, E = await browser(b, 'edge')
+        await login(E, ADMIN, APW)
+        await E.wait_for_selector('.event-card')
+        await until(E, STATS + ".then(s => s.total === 213)")
+        sa, se = await A.evaluate(STATS), await E.evaluate(STATS)
+        assert (sa['total'], sa['eligible'], sa['winners'], sa['prizeCategories']) == (se['total'], se['eligible'], se['winners'], se['prizeCategories']), (sa, se)
+        await E.wait_for_timeout(500)
+        await shot(E, 'C1-edge-dashboard')
+        ok(2, 'Edge memaparkan %d peserta, %d layak, %d kategori hadiah — sama dengan Chrome' % (se['total'], se['eligible'], se['prizeCategories']))
 
-        # ---------------------------------------------------------------- dua hala
-        await bb.evaluate("import('./js/store.js').then(S => S.savePrize({ category: 'Hadiah Istimewa', name: 'Basikal', quantity: 1, sequence: 3 }))")
-        await until(a, STATS + ".then(s => s.prizeCategories === 3)")
-        await a.evaluate("import('./js/store.js').then(S => S.listPrizes()).then(ps => import('./js/store.js').then(S => S.executeDraw({ prizeId: ps.find(p => p.name === 'Baucar').id, count: 5 })))")
-        await until(bb, STATS + ".then(s => s.winners === 5 && s.eligible === 35)")
+        # ---------------------------------------------------------------- UJIAN 3: telefon sahkan kehadiran → dashboard dikemas kini
+        token = FS.events[EV]['token']
+        pctx, P = await browser(b, 'phone', viewport={'width': 360, 'height': 740}, is_mobile=True, has_touch=True)
+        await P.goto(URL + 'checkin.html#e=%s&t=%s' % (EV, token))
+        await P.wait_for_selector('#ci-id')
+        await P.fill('#ci-id', 's0007'); await P.click('#ci-go')
+        await P.wait_for_selector('#ci-confirm'); await P.click('#ci-confirm')
+        await P.wait_for_selector('.ci-ok')
+        await A.goto(URL + '#/attendance')
+        await A.wait_for_selector('#a-stats')
+        for _ in range(60):
+            if 'Hadir1' in (await A.inner_text('#a-stats')).replace('\n', '').replace(' ', ''): break
+            await A.wait_for_timeout(250)
+        assert 'Hadir1' in (await A.inner_text('#a-stats')).replace('\n', '').replace(' ', ''), await A.inner_text('#a-stats')
+        await shot(A, 'C2-chrome-attendance-auto')
+        ok(3, 'kehadiran dari telefon muncul di dashboard Chrome secara automatik (tanpa muat semula)')
 
-        # pelayar kedua bukan Peranti Kawalan → tiada cabutan
-        await bb.goto(URL + '#/draw')
-        await bb.wait_for_selector('#d-warn .alert')
-        assert 'bukan Peranti Kawalan' in await bb.inner_text('#d-warn')
-        assert await bb.is_disabled('#d-open')
-        await shot(bb, 'C4-second-browser-draw-blocked')
+        # ---------------------------------------------------------------- UJIAN 4: komputer lain (operator) — data sama
+        octx, O = await browser(b, 'operator')
+        await login(O, 'operator@fkm.utm.my', 'Operator123')
+        await O.wait_for_selector('.event-card')
+        await until(O, "import('./js/store.js').then(S => S.listParticipants()).then(ps => ps.length === %d)" % FS.count(EV, 'participants'))
+        nav = await O.inner_text('.side-nav')
+        assert 'Data Staf' not in nav and 'Pendaftaran Kehadiran' not in nav and 'Cabutan Bertuah' in nav, nav
+        att_o = await O.evaluate("import('./js/attendance.js').then(a => a.eventInfo())")
+        assert att_o['present'] == 1 and att_o['total'] == 201, att_o
+        ok(4, 'komputer lain (Operator Cabutan) — %d peserta & kehadiran %d/%d sama; menu ikut peranan' % (FS.count(EV, 'participants'), att_o['present'], att_o['total']))
 
-        # ---------------------------------------------------------------- luar talian
-        OFFLINE.add('kawalan'); OFFLINE.add('kedua')
-        await until(a, "import('./js/sync.js').then(s => (s.tick().catch(()=>{}), !s.state.online))")
-        await a.evaluate("import('./js/store.js').then(S => S.executeDraw({ count: 3 }))")
-        await until(a, "import('./js/sync.js').then(s => s.state.pending > 0)")
-        await a.goto(URL + '#/dashboard'); await a.wait_for_selector('.event-card'); await a.wait_for_timeout(300)
-        assert 'Luar talian' in await a.inner_text('#net-status'), await a.inner_text('#net-status')
-        await shot(a, 'C5-control-offline')
-        await until(bb, "import('./js/sync.js').then(s => (s.tick().catch(()=>{}), !s.state.online))")
-        err = await bb.evaluate("import('./js/store.js').then(S => S.savePrize({ category: 'Sagu Hati', name: 'X', quantity: 1, sequence: 9 })).then(() => '', e => e.message)")
-        assert 'BACA SAHAJA' in err, err
-        OFFLINE.clear()
-        await until(a, "import('./js/sync.js').then(s => s.state.pending === 0 && s.state.online)", 30)
-        await until(bb, STATS + ".then(s => s.winners === 8)", 30)
+        # ---------------------------------------------------------------- UJIAN 8 & 9: cabutan pada satu peranti → disimpan berpusat
+        pid = await O.evaluate("import('./js/store.js').then(S => S.listPrizes()).then(ps => ps[0].id)")
+        res = json.loads(await O.evaluate("import('./js/store.js').then(S => S.executeDraw({ prizeId: '%s', count: 1 })).then(r => JSON.stringify({ mode: r.draw.mode, w: r.winners[0].staffId, id: r.winners[0].id }))" % pid))
+        assert res['mode'] == 'online'
+        assert FS.docs[(EV, 'participants', res['w'])]['d']['status'] == 'WINNER'
+        await until(E, "import('./js/store.js').then(S => S.eligiblePool()).then(p => !p.some(x => x.staffId === '%s'))" % res['w'])
+        ok(8, 'cabutan di komputer Operator dibuat di pelayan (%s menang) → disimpan berpusat & dibuang daripada kumpulan layak di Edge' % res['w'])
+        await until(A, WINNERS + ".then(x => x.length > 0)")
+        await until(E, WINNERS + ".then(x => x.length > 0)")
+        wa, we = await A.evaluate(WINNERS), await E.evaluate(WINNERS)
+        assert wa == we, (wa, we)
+        await E.goto(URL + '#/history'); await E.wait_for_selector('#h-body table')
+        await shot(E, 'C3-edge-history')
+        ok(9, 'sejarah pemenang di Chrome dan Edge sama: %s' % we)
 
-        # ---------------------------------------------------------------- kehadiran QR → Peranti Kawalan → pelayar kedua
-        ev = list(A.EV.keys())[0]
-        A.STAFF[ev]['777777'] = {'staff_id': '777777', 'name': 'Staf QR', 'department': 'Pentadbiran', 'checked_in_at': A.now(), 'checked_in_via': 'qr', 'updated_at': A.now()}
-        await until(bb, "import('./js/store.js').then(S => S.listParticipants()).then(ps => ps.some(p => p.staffId === '777777'))", 30)
-        nos = await bb.evaluate("import('./js/store.js').then(S => S.listParticipants()).then(ps => ps.map(p => p.duckNo))")
-        assert len(nos) == len(set(nos)), 'nombor itik unik'
+        # ---------------------------------------------------------------- UJIAN 5–7: luar talian (Peranti Kawalan Chrome)
+        await A.goto(URL + '#/settings'); await A.wait_for_selector('#db-claim')
+        await A.click('#db-claim'); await A.locator('.modal-foot .btn-primary').click()
+        await until(A, "import('./js/sync.js').then(s => s.isControl())")
+        FS.offline.add('chrome'); await actx.set_offline(True)
+        await A.evaluate("import('./js/sync.js').then(s => s.tick().catch(() => {}))")
+        await until(A, "import('./js/sync.js').then(s => s.phase() === 'offline')")
+        off = json.loads(await A.evaluate("import('./js/store.js').then(S => S.executeDraw({ count: 2 })).then(r => JSON.stringify({ mode: r.draw.mode, ws: r.winners.map(w => w.staffId) }))"))
+        assert off['mode'] == 'offline'
+        await A.evaluate("import('./js/attendance.js').then(a => a.setCheckin('S0050', true))")
+        await A.goto(URL + '#/dashboard'); await A.wait_for_selector('.kpi-grid')
+        await A.wait_for_selector('#net-pill:has-text("OFFLINE")')
+        await shot(A, 'C4-chrome-offline')
+        ok(5, 'luar talian: pengguna yang telah disahkan terus bekerja — cabutan di Peranti Kawalan + kehadiran di kaunter disimpan setempat')
+        pend = await A.evaluate("import('./js/sync.js').then(s => s.state.pending)")
+        await A.reload()
+        await A.wait_for_selector('.kpi-grid', timeout=20000)
+        pend2 = await A.evaluate("import('./js/sync.js').then(s => s.state.pending)")
+        wl = await A.evaluate("import('./js/store.js').then(S => S.listWinners()).then(ws => ws.length)")
+        assert pend2 == pend and pend2 > 0 and wl == 3, (pend, pend2, wl)
+        ok(6, 'muat semula semasa luar talian: data tersegerak & %d rekod menunggu masih ada' % pend2)
+        FS.offline.discard('chrome'); await actx.set_offline(False)
+        await A.evaluate("window.dispatchEvent(new Event('online'))")
+        await until(A, "import('./js/sync.js').then(s => s.state.pending === 0 && s.state.online)", 40)
+        for w in off['ws']:
+            assert FS.docs[(EV, 'participants', w)]['d']['status'] == 'WINNER'
+        assert FS.count(EV, 'winners') == 3 and FS.count(EV, 'attendance') == 2
+        await until(E, WINNERS + ".then(x => x.split(',').length === 3)")
+        await shot(A, 'C5-chrome-synced')
+        ok(7, 'sambungan pulih: rekod menunggu disegerak automatik tanpa pendua (3 pemenang, 2 kehadiran di pelayan)')
 
-        # QR boleh dipapar di pelayar kedua (token dari awan)
-        await bb.goto(URL + '#/attendance')
-        await bb.wait_for_selector('#a-qr svg', timeout=15000)
+        # ---------------------------------------------------------------- UJIAN 10: kehadiran serentak dari beberapa peranti
+        k1ctx, K1 = await browser(b, 'kaunter1')
+        k2ctx, K2 = await browser(b, 'kaunter2')
+        await login(K1, 'kaunter1@fkm.utm.my', 'Kaunter123', 'attendance')
+        await login(K2, 'kaunter2@fkm.utm.my', 'Kaunter123', 'attendance')
+        await K1.wait_for_selector('#a-tbl tbody tr td.mono', timeout=30000)
+        await K2.wait_for_selector('#a-tbl tbody tr td.mono', timeout=30000)
+        before = FS.count(EV, 'attendance'), FS.count(EV, 'participants')
+        # dua kaunter + dua telefon mengesahkan staf yang SAMA pada masa yang sama
+        await asyncio.gather(
+            K1.evaluate("import('./js/attendance.js').then(a => a.setCheckin('S0100', true))"),
+            K2.evaluate("import('./js/attendance.js').then(a => a.setCheckin('S0100', true))"),
+            P.evaluate("fetch('https://ajlxptgbwxnswcmyassf.supabase.co/rest/v1/rpc/ldr_checkin', {method: 'POST', headers: {'content-type': 'application/json', apikey: 'x'}, body: JSON.stringify({p_event: '%s', p_token: '%s', p_staff_id: 'S0100'})})" % (EV, token)),
+            P.evaluate("fetch('https://ajlxptgbwxnswcmyassf.supabase.co/rest/v1/rpc/ldr_checkin', {method: 'POST', headers: {'content-type': 'application/json', apikey: 'x'}, body: JSON.stringify({p_event: '%s', p_token: '%s', p_staff_id: 'S0100'})})" % (EV, token)),
+        )
+        await until(K1, "import('./js/sync.js').then(s => s.state.pending === 0)")
+        await until(K2, "import('./js/sync.js').then(s => s.state.pending === 0)")
+        att100 = [k for (e, s, k) in FS.docs if e == EV and s == 'attendance' and k == 'S0100']
+        assert len(att100) == 1 and FS.count(EV, 'attendance') == before[0] + 1, (att100, FS.count(EV, 'attendance'), before)
+        err = await K1.evaluate("import('./js/store.js').then(S => S.savePrize({ category: 'Sagu Hati', name: 'X', quantity: 1, sequence: 9 })).then(() => '', e => e.message)")
+        assert 'tidak dibenarkan' in err, err
+        ok(10, 'pengesahan serentak (2 kaunter + 2 telefon) bagi staf sama → 1 rekod kehadiran, tiada pendua; Staf Pendaftaran tidak boleh ubah hadiah')
 
-        # ambil alih kawalan
-        await bb.goto(URL + '#/settings')
-        await bb.wait_for_selector('#cl-claim')
-        await bb.click('#cl-claim'); await bb.locator('.modal-foot .btn-primary').click()
-        await bb.wait_for_selector('.cloud-card .tag-gold', timeout=15000)
-        await until(a, "import('./js/sync.js').then(s => !s.isControl())", 20)
-        await shot(bb, 'C6-second-browser-now-control')
+        # ---------------------------------------------------------------- Akaun baharu → kelulusan pentadbir
+        nctx, N = await browser(b, 'baru')
+        await N.goto(URL + '#/dashboard'); await N.wait_for_selector('#au-to-signup'); await N.click('#au-to-signup')
+        await N.fill('#au-name', 'Pegawai Baharu'); await N.fill('#au-email', 'baru@fkm.utm.my'); await N.fill('#pw1', 'Baharu123'); await N.fill('#pw2', 'Baharu123')
+        await N.click('#auth-form button[type=submit]')
+        await N.wait_for_selector('text=Akaun menunggu kelulusan')
+        await shot(N, 'C6-pending-approval')
+        await E.goto(URL + '#/settings'); await E.wait_for_selector('#c-users select')
+        uid = FS.users['baru@fkm.utm.my']['id']
+        await E.select_option('select[data-role="%s"]' % uid, 'registrar')
+        await E.wait_for_selector('.toast:has-text("Pengguna dikemas kini")')
+        await shot(E, 'C7-users-roles')
+        await N.click('#pd-check')
+        await N.wait_for_selector('.side-nav')
+        assert 'Pendaftaran Kehadiran' in await N.inner_text('.side-nav')
+        ok('A', 'akaun baharu menunggu kelulusan → pentadbir tetapkan peranan di Tetapan → akses diberi')
 
-        # telefon: tetapan awan pada 360px
-        m = await browser_ctx(b, 'kedua', viewport={'width': 360, 'height': 780}, is_mobile=True, has_touch=True, device_scale_factor=2)
-        await m.goto(URL + '#/dashboard')
-        await m.wait_for_selector('#auth-join'); await m.click('#auth-join')
-        await m.fill('#cj-code', code); await m.fill('#cj-pw', PW)
-        await m.locator('.modal-foot .btn-primary').click()
-        await m.wait_for_selector('.event-card', timeout=30000)
-        await m.goto(URL + '#/settings'); await m.wait_for_selector('.cloud-code')
-        assert await m.evaluate('document.documentElement.scrollWidth') <= 360
-        await shot(m, 'C7-mobile-cloud')
+        # ---------------------------------------------------------------- Paparan telefon 360px
+        mctx, M = await browser(b, 'mobile', viewport={'width': 360, 'height': 780}, is_mobile=True, has_touch=True, device_scale_factor=2)
+        await login(M, ADMIN, APW, 'settings')
+        await M.wait_for_selector('#c-db')
+        await M.wait_for_timeout(800)
+        assert await M.evaluate('document.documentElement.scrollWidth') <= 360
+        await shot(M, 'C8-mobile-settings')
         await b.close()
 
     bad = [e for e in errors if 'favicon' not in e]
     if bad:
         print('Ralat konsol:\n  ' + '\n  '.join(bad[:20])); sys.exit(1)
-    print('✔ E2E awan lulus')
+    with open(os.path.join(SHOTS, 'laporan-ujian-v4.txt'), 'w') as f:
+        f.write('\n'.join(report) + '\n')
+    print('✔ E2E pangkalan data pusat lulus (%d ujian)' % len(report))
 
 if __name__ == '__main__':
     asyncio.run(main())

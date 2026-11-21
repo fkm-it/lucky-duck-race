@@ -5,10 +5,10 @@
  */
 
 export const DB_NAME = 'lucky-duck-race';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 /* Stor yang disegerak ke awan, dan kunci tetapan yang turut disegerak (selebihnya kekal setempat: auth, sesi, kunci). */
-export const SYNCED = ['participants', 'prizes', 'draws', 'winners', 'audit', 'settings'];
+export const SYNCED = ['staff', 'attendance', 'participants', 'prizes', 'draws', 'winners', 'audit', 'settings'];
 export const SETTINGS_SYNC_KEYS = new Set(['app', 'duckSeq', 'winnerSeq']);
 export const NUMERIC_KEY_STORES = new Set(['winners', 'audit']);
 
@@ -45,6 +45,9 @@ function upgrade(db, t, oldVersion) {
     s.createIndex('at', 'at');
   }
   if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+  /* v3: salinan setempat senarai staf & kehadiran (pangkalan data pusat) */
+  if (!db.objectStoreNames.contains('staff')) db.createObjectStore('staff', { keyPath: 'staffId' });
+  if (!db.objectStoreNames.contains('attendance')) db.createObjectStore('attendance', { keyPath: 'staffId' });
   /* v2: penyegerakan awan */
   if (!db.objectStoreNames.contains('outbox')) db.createObjectStore('outbox', { keyPath: 'k' });
   if (!db.objectStoreNames.contains('syncrev')) db.createObjectStore('syncrev', { keyPath: 'k' });

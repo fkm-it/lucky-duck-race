@@ -1,6 +1,6 @@
 {
   "name": "rock-the-draw",
-  "version": "3.0.2",
+  "version": "4.0.0",
   "description": "Rock The Draw \u2014 Let's Rock. Let's Win! Kehadiran QR + cabutan bertuah perlumbaan itik rockstar 3D",
   "scripts": {
     "test": "node --test tests/*.test.mjs",

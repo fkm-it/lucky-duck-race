@@ -1,21 +1,24 @@
 /**
- * attendance.js — Servis kehadiran di laptop admin.
- * Majlis dalam talian (Supabase) menyimpan SENARAI STAF; staf mengesahkan kehadiran melalui QR
- * (checkin.html). Laptop menyegerak setiap 5 saat: staf yang hadir → automatik jadi peserta cabutan.
+ * attendance.js — Servis kehadiran (pangkalan data pusat).
+ *
+ * Senarai staf & rekod kehadiran berada dalam pangkalan data pusat (jadual staff / attendance) dan disalin
+ * ke IndexedDB setiap peranti (stor 'staff' / 'attendance') supaya boleh dicari & direkod LUAR TALIAN.
+ * Kehadiran (QR telefon, kaunter, atau luar talian selepas disegerak) → peserta cabutan dicipta DI PELAYAN
+ * secara atomik (satu kehadiran & satu kelayakan bagi setiap No. Pekerja).
  */
 import { rpc } from './cloud.js';
 import { randomHex } from './rng.js';
+import { tx, reqP, getAll } from './db.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
+import { cleanText, normalizeStaffId, validateStaffId, FIELD_LIMITS } from './logic.js';
 
-const KEY = 'attendance';
-let timer = null;
-let syncing = false;
-const listeners = new Set();
-export const state = { lastSync: null, lastError: '', lastAdded: [] };
-
-export const getConfig = () => store.getKV(KEY);
-const saveConfig = (c) => store.setKV(KEY, c);
+/** Konfigurasi majlis aktif (dari pangkalan data pusat). null jika tiada majlis / tiada token QR. */
+export async function getConfig() {
+  const e = sync.state.event;
+  if (!e) return null;
+  return { eventId: e.event_id, token: e.qr_token || '', eventName: e.name, isOpen: e.is_open !== false, legacy: !!e.legacy };
+}
 
 export function checkinUrl(cfg) {
   const u = new URL('checkin.html', location.href);
@@ -23,140 +26,118 @@ export function checkinUrl(cfg) {
   return u.toString();
 }
 
+/** Cipta majlis baharu (pentadbir, dalam talian) dan jadikan aktif. */
 export async function createEvent(name) {
   const token = randomHex(16);
-  const adminKey = randomHex(24);
   const eventName = String(name || '').trim().slice(0, 160) || 'Majlis Rock The Draw';
-  const eventId = await rpc('ldr_create_event', { p_name: eventName, p_token: token, p_admin_key: adminKey });
-  const cfg = { eventId, token, adminKey, eventName, autoSync: true, since: null, createdAt: new Date().toISOString() };
-  await saveConfig(cfg);
-  await store.audit('KEHADIRAN_MAJLIS_CIPTA', eventName + ' (' + eventId + ')');
-  return cfg;
+  const meta = await rpc('ldr_event_create', { p_name: eventName, p_token: token });
+  await sync.switchEvent(meta);
+  await store.audit('MAJLIS_CIPTA', eventName);
+  return getConfig();
 }
 
-const admin = (cfg) => ({ p_event: cfg.eventId, p_admin_key: cfg.adminKey });
-
+/** Statistik kehadiran daripada salinan setempat (berfungsi luar talian). */
 export async function eventInfo() {
-  const cfg = await getConfig();
-  const rows = await rpc('ldr_admin_event', admin(cfg));
-  return rows && rows[0];
+  const [staff, att] = await Promise.all([count('staff'), count('attendance')]);
+  const e = sync.state.event || {};
+  return { name: e.name, is_open: e.is_open !== false, total: staff, present: att };
 }
+const count = (n) => tx(n, 'readonly', (s) => reqP(s[n].count()));
 
 export async function setOpen(open) {
-  const cfg = await getConfig();
-  await rpc('ldr_admin_update_event', { ...admin(cfg), p_is_open: !!open });
+  const meta = await rpc('ldr_event_update', { p_event: sync.state.event.event_id, p_is_open: !!open });
+  sync.setEventMeta(meta);
   await store.audit('KEHADIRAN_' + (open ? 'BUKA' : 'TUTUP'), '');
 }
 
 export async function rename(name) {
-  const cfg = await getConfig();
-  await rpc('ldr_admin_update_event', { ...admin(cfg), p_name: name });
-  await saveConfig({ ...cfg, eventName: name });
+  const meta = await rpc('ldr_event_update', { p_event: sync.state.event.event_id, p_name: name });
+  sync.setEventMeta(meta);
 }
 
 /** Tukar token QR — QR lama/bercetak tidak lagi sah. */
 export async function rotateToken() {
-  const cfg = await getConfig();
-  const token = randomHex(16);
-  await rpc('ldr_admin_update_event', { ...admin(cfg), p_new_token: token });
-  await saveConfig({ ...cfg, token });
-  await store.audit('KEHADIRAN_QR_TUKAR', '');
-  return token;
+  const meta = await rpc('ldr_event_update', { p_event: sync.state.event.event_id, p_new_token: randomHex(16) });
+  sync.setEventMeta(meta);
+  await store.audit('KEHADIRAN_TUKAR_QR', '');
 }
 
-export async function setAutoSync(on) {
-  const cfg = await getConfig();
-  await saveConfig({ ...cfg, autoSync: !!on });
-}
-
-/** Muat naik senarai staf (upsert; status kehadiran dikekalkan). */
+/** Muat naik / kemas kini senarai staf (pentadbir). Kehadiran sedia ada dikekalkan. */
 export async function uploadStaff(items, onProgress) {
-  const cfg = await getConfig();
-  if (!cfg) throw new Error('Majlis dalam talian belum disediakan.');
-  let n = 0;
-  for (let i = 0; i < items.length; i += 1000) {
-    const chunk = items.slice(i, i + 1000).map((x) => ({ staff_id: x.staffId, name: x.name, department: x.department || '' }));
-    n += await rpc('ldr_admin_upsert_staff', { ...admin(cfg), p_rows: chunk }, { timeout: 30000 });
-    if (onProgress) onProgress(Math.min(items.length, i + 1000), items.length);
+  const now = new Date().toISOString();
+  const rows = items.map((it) => {
+    const staffId = normalizeStaffId(it.staffId);
+    if (validateStaffId(staffId)) return null;
+    return { staffId, name: cleanText(it.name, FIELD_LIMITS.name) || staffId, department: cleanText(it.department, FIELD_LIMITS.department), updatedAt: now };
+  }).filter(Boolean);
+  for (let i = 0; i < rows.length; i += 500) {
+    await tx(['staff'], 'readwrite', async (s) => { for (const r of rows.slice(i, i + 500)) await reqP(s.staff.put(r)); });
+    if (onProgress) onProgress(Math.min(i + 500, rows.length), rows.length);
   }
-  await store.audit('KEHADIRAN_SENARAI_STAF', n + ' staf dimuat naik');
-  return n;
+  await store.audit('STAF_MUAT_NAIK', rows.length + ' staf');
+  await sync.flush(120000);
+  return rows.length;
 }
 
+/** Senarai staf + kehadiran (salinan setempat). */
 export async function listStaff() {
-  const cfg = await getConfig();
-  return rpc('ldr_admin_list', { ...admin(cfg), p_since: null }, { timeout: 30000 });
+  const [staff, att] = await Promise.all([getAll('staff'), getAll('attendance')]);
+  const map = new Map(att.map((a) => [a.staffId, a]));
+  return staff.map((s) => {
+    const a = map.get(s.staffId);
+    return { staff_id: s.staffId, name: s.name, department: s.department || '', checked_in_at: a ? a.checkedInAt : null, checked_in_via: a ? a.via : null, pending: false };
+  });
 }
 
 export async function deleteAllStaff() {
-  const cfg = await getConfig();
-  const n = await rpc('ldr_admin_delete_staff', { ...admin(cfg), p_staff_ids: null });
-  await store.audit('KEHADIRAN_SENARAI_PADAM', n + ' staf');
-  return n;
+  await tx(['staff', 'attendance'], 'readwrite', async (s) => { await reqP(s.attendance.clear()); await reqP(s.staff.clear()); });
+  await store.audit('STAF_PADAM_SEMUA', '');
 }
 
-/** Sahkan / batal kehadiran secara manual (kaunter), kemudian segerak serta-merta. */
+/**
+ * Sahkan / batal kehadiran di kaunter (pentadbir / staf pendaftaran). Berfungsi LUAR TALIAN:
+ * rekod disimpan dalam baris gilir dan dihantar bila online; pelayan menolak pendua secara atomik.
+ */
 export async function setCheckin(staffId, present) {
-  const cfg = await getConfig();
-  await rpc('ldr_admin_set_checkin', { ...admin(cfg), p_staff_id: staffId, p_present: !!present });
-  await store.audit(present ? 'KEHADIRAN_MANUAL' : 'KEHADIRAN_BATAL', staffId);
-  return syncNow();
-}
-
-export async function disconnect() {
-  stopAutoSync();
-  const cfg = await getConfig();
-  await store.setKV(KEY, null);
-  await store.audit('KEHADIRAN_PUTUS', cfg ? cfg.eventName + ' (' + cfg.eventId + ')' : '');
-}
-
-/** Ambil perubahan sejak penyegerakan terakhir → kemas kini peserta setempat. */
-export async function syncNow() {
-  if (syncing) return { added: [], removed: 0 };
-  // Majlis awan: hanya Peranti Kawalan menukar kehadiran → peserta (peranti lain menerima melalui penyegerakan awan)
-  if (sync.isCloud() && !sync.isControl()) return { added: [], removed: 0 };
-  const cfg = await getConfig();
-  if (!cfg) return { added: [], removed: 0 };
-  syncing = true;
-  try {
-    // tolak 5s sebagai margin jam / transaksi serentak (operasi idempoten)
-    const since = cfg.since ? new Date(new Date(cfg.since).getTime() - 5000).toISOString() : null;
-    const rows = await rpc('ldr_admin_list', { ...admin(cfg), p_since: since }, { timeout: 30000 });
-    const res = await store.syncAttendees(rows || []);
-    if (rows && rows.length) {
-      const max = rows.reduce((m, r) => (r.updated_at > m ? r.updated_at : m), cfg.since || '');
-      const latest = await getConfig();
-      if (latest && latest.eventId === cfg.eventId) await saveConfig({ ...latest, since: max });
+  const sid = normalizeStaffId(staffId);
+  await tx(['staff', 'attendance', 'audit'], 'readwrite', async (s) => {
+    const st = await reqP(s.staff.get(sid));
+    if (!st) throw new Error('No. Pekerja ' + sid + ' tiada dalam senarai staf.');
+    if (present) {
+      if (await reqP(s.attendance.get(sid))) return;
+      await reqP(s.attendance.put({ staffId: sid, checkedInAt: new Date().toISOString(), via: sync.state.online ? 'manual' : 'offline', device: sync.state.device && sync.state.device.name }));
+    } else {
+      await reqP(s.attendance.delete(sid));
     }
-    state.lastSync = new Date();
-    state.lastError = '';
-    state.lastAdded = res.added;
-    listeners.forEach((fn) => { try { fn(res); } catch (_) { /* abaikan */ } });
-    return res;
-  } catch (e) {
-    state.lastError = e.message;
-    throw e;
-  } finally { syncing = false; }
+  });
+  await store.audit(present ? 'KEHADIRAN_SAH' : 'KEHADIRAN_BATAL', sid);
 }
 
-export function onSync(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+export async function syncNow() { await sync.tick(); return { added: [], removed: 0 }; }
 
-export async function startAutoSync() {
-  stopAutoSync();
-  const tick = async () => {
-    const cfg = await getConfig().catch(() => null);
-    if (cfg && cfg.autoSync && !document.body.classList.contains('stage-open') && navigator.onLine !== false) {
-      await syncNow().catch(() => {});
+/** Pemberitahuan apabila peserta baharu tiba dari pelayan (kehadiran QR). */
+export function onSync(fn) {
+  let known = null;
+  return sync.on(async (type, detail) => {
+    if (type !== 'change' || !detail.includes('participants')) return;
+    const ps = await store.listParticipants();
+    if (known) {
+      const added = ps.filter((p) => !known.has(p.staffId));
+      if (added.length) fn({ added, removed: 0 });
     }
-  };
-  timer = setInterval(tick, 5000);
-  tick();
+    known = new Set(ps.map((p) => p.staffId));
+  });
 }
 
-export function stopAutoSync() { if (timer) { clearInterval(timer); timer = null; } }
+/** Sambung majlis versi lama (kunci admin laptop disimpan dalam pelayar) → QR bercetak kekal sah. */
+export async function linkLegacy() {
+  const old = await store.getKV('attendance');
+  if (!old || !old.adminKey || !old.token) return null;
+  const meta = await rpc('ldr_event_link_legacy', { p_event: old.eventId, p_admin_key: old.adminKey, p_token: old.token });
+  return meta;
+}
 
-// ----------------------------------------------------------------------------- QR
-
+// ---------------------------------------------------------------------------- QR
 let qrP = null;
 function loadQR() {
   if (globalThis.qrcode) return Promise.resolve(globalThis.qrcode);
